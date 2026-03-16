@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Super Admin Dashboard - Multi School ERP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Font Awesome for icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+<style>
+body{font-family:Arial;margin:0;background:#f2f2f2;}
+#loginBox{position:fixed;top:0;left:0;width:100%;height:100%;background:white;display:flex;align-items:center;justify-content:center;z-index:10;}
+.loginCard{background:white;padding:30px;box-shadow:0 0 10px rgba(0,0,0,0.3);border-radius:10px;width:90%;max-width:350px;}
+input{width:100%;padding:10px;margin:8px 0;}
+button{padding:12px;border:none;background:#004aad;color:white;font-size:16px;border-radius:8px;cursor:pointer;}
+button:hover{background:#003080;}
+header{background:#004aad;color:white;padding:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;}
+#logoutBtn{background:#f44336;padding:8px 12px;cursor:pointer;}
+.container{padding:15px;}
+.table{width:100%;border-collapse:collapse;margin-top:20px;}
+.table th,.table td{border:1px solid #ccc;padding:8px;text-align:center;}
+.table th{background:#004aad;color:white;}
+.actions button{margin:0 3px;padding:5px 8px;font-size:12px;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginBox">
+<div class="loginCard">
+<h3>Super Admin Login</h3>
+<input id="adminEmail" placeholder="Email">
+<input id="adminPassword" type="password" placeholder="Password">
+<button onclick="loginSuperAdmin()"><i class="fas fa-right-to-bracket"></i> Login</button>
+</div>
+</div>
+
+<header>
+<div style="font-weight:bold;font-size:18px;">Multi-School ERP - Super Admin</div>
+<button id="logoutBtn" onclick="logoutSuperAdmin()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+</header>
+
+<div class="container" id="dashboard" style="display:none;">
+<h2>Schools Management</h2>
+<button onclick="openCreateSchool()">+ Create New School</button>
+
+<table class="table" id="schoolsTable">
+<thead>
+<tr>
+<th>School ID</th>
+<th>School Name</th>
+<th>Admin Email</th>
+<th>Actions</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table>
+</div>
+
+<!-- Create/Edit School Modal -->
+<div id="schoolModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;">
+<div style="background:white;padding:20px;border-radius:10px;width:90%;max-width:400px;">
+<h3 id="modalTitle">Create School</h3>
+<input id="schoolName" placeholder="School Name" required>
+<input id="schoolAdminEmail" placeholder="Admin Email" required>
+<input id="schoolAdminPassword" placeholder="Admin Password" required>
+<button onclick="saveSchool()">Save</button>
+<button onclick="closeSchoolModal()">Cancel</button>
+</div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, getDocs, setDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBj8_SjhJ9QtXu-4DigToqjBos5waZEXYw",
+  authDomain: "nmpsnagguradiya-b9b94.firebaseapp.com",
+  projectId: "nmpsnagguradiya-b9b94",
+  storageBucket: "nmpsnagguradiya-b9b94.firebasestorage.app",
+  messagingSenderId: "811957568318",
+  appId: "1:811957568318:web:7058de9ba52df9d6bae26f"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+let editingSchoolId = null;
+
+// Super Admin Login
+window.loginSuperAdmin = async function() {
+  const email = document.getElementById("adminEmail").value.trim();
+  const pass = document.getElementById("adminPassword").value.trim();
+  if(!email || !pass){ alert("Enter Email & Password"); return; }
+  try{
+    await signInWithEmailAndPassword(auth,email,pass);
+    document.getElementById("loginBox").style.display="none";
+    document.getElementById("dashboard").style.display="block";
+    loadSchools();
+  }catch(e){
+    alert("Login Failed: "+e.message);
+  }
+}
+
+// Logout
+window.logoutSuperAdmin = async function(){
+  await signOut(auth);
+  location.reload();
+}
+
+// Load schools
+async function loadSchools(){
+  const tbody = document.querySelector("#schoolsTable tbody");
+  tbody.innerHTML="";
+  const snap = await getDocs(collection(db,"schools"));
+  snap.forEach(docSnap=>{
+    const data = docSnap.data();
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${docSnap.id}</td>
+      <td>${data.name}</td>
+      <td>${data.adminEmail}</td>
+      <td class="actions">
+        <button onclick="editSchool('${docSnap.id}','${data.name}','${data.adminEmail}','${data.adminPassword}')">Edit</button>
+        <button onclick="deleteSchool('${docSnap.id}')">Delete</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// Open Create School Modal
+window.openCreateSchool = function(){
+  editingSchoolId=null;
+  document.getElementById("modalTitle").innerText="Create School";
+  document.getElementById("schoolName").value="";
+  document.getElementById("schoolAdminEmail").value="";
+  document.getElementById("schoolAdminPassword").value="";
+  document.getElementById("schoolModal").style.display="flex";
+}
+
+// Edit School
+window.editSchool = function(id,name,email,password){
+  editingSchoolId=id;
+  document.getElementById("modalTitle").innerText="Edit School";
+  document.getElementById("schoolName").value=name;
+  document.getElementById("schoolAdminEmail").value=email;
+  document.getElementById("schoolAdminPassword").value=password;
+  document.getElementById("schoolModal").style.display="flex";
+}
+
+// Close Modal
+window.closeSchoolModal = function(){
+  document.getElementById("schoolModal").style.display="none";
+}
+
+// Save School
+window.saveSchool = async function(){
+  const name = document.getElementById("schoolName").value.trim();
+  const email = document.getElementById("schoolAdminEmail").value.trim();
+  const password = document.getElementById("schoolAdminPassword").value.trim();
+  if(!name || !email || !password){ alert("Fill all fields"); return; }
+
+  const schoolId = editingSchoolId || "school-"+Date.now();
+  await setDoc(doc(db,"schools",schoolId),{
+    name,
+    adminEmail: email,
+    adminPassword: password
+  });
+  alert("School saved successfully!");
+  closeSchoolModal();
+  loadSchools();
+}
+
+// Delete School
+window.deleteSchool = async function(id){
+  if(confirm("Are you sure to delete this school?")){
+    await deleteDoc(doc(db,"schools",id));
+    loadSchools();
+  }
+}
+
+// Keep Super Admin logged in on refresh
+auth.onAuthStateChanged(user=>{
+  if(user){
+    document.getElementById("loginBox").style.display="none";
+    document.getElementById("dashboard").style.display="block";
+    loadSchools();
+  }
+});
+</script>
+
+</body>
+  </html>
