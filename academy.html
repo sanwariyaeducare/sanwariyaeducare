@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta charset="UTF-8">
+<title>Exam Management</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+
+body{
+font-family:Arial;
+margin:0;
+background:#f2f2f2;
+}
+
+/* HEADER */
+
+header{
+background:#004aad;
+color:white;
+padding:16px;
+text-align:center;
+font-size:22px;
+}
+
+/* CONTAINER */
+
+.container{
+padding:20px;
+}
+
+/* BUTTON GRID */
+
+.menu{
+display:grid;
+grid-template-columns:repeat(4,1fr);
+gap:20px;
+}
+
+/* BUTTON CARD */
+
+.card{
+background:#004aad;
+color:white;
+border-radius:12px;
+padding:30px 15px;
+text-align:center;
+font-size:18px;
+font-weight:bold;
+cursor:pointer;
+box-shadow:0 4px 10px rgba(0,0,0,0.2);
+transition:0.3s;
+}
+
+/* ICON */
+
+.icon{
+font-size:48px;
+display:block;
+margin-bottom:10px;
+}
+
+/* HOVER */
+
+.card:hover{
+transform:scale(1.05);
+}
+
+/* MOBILE */
+
+@media(max-width:768px){
+
+.menu{
+grid-template-columns:repeat(2,1fr);
+}
+
+.icon{
+font-size:50px;
+}
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<header>Exam Management</header>
+
+<div class="container">
+
+<div class="menu">
+
+<div class="card"
+onclick="window.location.href='exam.html'">
+
+<span class="icon">📚</span>
+
+Exam Setup
+
+</div>
+
+<div class="card"
+onclick="window.location.href='mark.html'">
+
+<span class="icon">📝</span>
+
+Marks Entry
+
+</div>
+
+<div class="card"
+onclick="window.location.href='print-result.html'">
+
+<span class="icon">📊</span>
+
+Print Result
+
+</div>
+
+<div class="card"
+onclick="window.location.href='print-admit-card.html'">
+
+<span class="icon">🎫</span>
+
+Print Admit Card
+
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+/* MULTI SCHOOL SUPPORT */
+
+const schoolId = localStorage.getItem("schoolId") || "school_001";
+
+</script>
+
+</body>
+</html>
