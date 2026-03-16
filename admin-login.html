@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<meta charset="UTF-8">
+<title>Ultimate School ERP - Multi School</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+<style>
+
+body{
+font-family:Arial;
+margin:0;
+background:#f2f2f2;
+}
+
+/* LOGIN */
+
+#loginBox{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:white;
+display:flex;
+align-items:center;
+justify-content:center;
+z-index:10;
+}
+
+.loginCard{
+background:white;
+padding:30px;
+box-shadow:0 0 10px rgba(0,0,0,0.3);
+border-radius:10px;
+width:90%;
+max-width:350px;
+}
+
+input{
+width:100%;
+padding:10px;
+margin:8px 0;
+}
+
+button{
+padding:12px;
+border:none;
+background:#004aad;
+color:white;
+font-size:16px;
+border-radius:8px;
+cursor:pointer;
+}
+
+button:hover{
+background:#003080;
+}
+
+/* HEADER */
+
+header{
+background:#004aad;
+color:white;
+padding:10px;
+display:flex;
+align-items:center;
+justify-content:space-between;
+flex-wrap:wrap;
+}
+
+#schoolLogo{
+width:60px;
+height:60px;
+border-radius:50%;
+object-fit:cover;
+background:white;
+}
+
+.centerHeader{
+flex:1;
+text-align:center;
+}
+
+#schoolName{
+font-size:22px;
+font-weight:bold;
+}
+
+#schoolAddress{
+font-size:14px;
+}
+
+#activeSession{
+font-size:13px;
+}
+
+#logoutBtn{
+background:#f44336;
+padding:8px 12px;
+cursor:pointer;
+}
+
+/* DASHBOARD */
+
+.container{
+padding:15px;
+}
+
+.grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+gap:15px;
+}
+
+.card{
+background:white;
+padding:20px;
+border-radius:10px;
+text-align:center;
+box-shadow:0 0 10px rgba(0,0,0,0.2);
+}
+
+.count{
+font-size:28px;
+font-weight:bold;
+color:#004aad;
+}
+
+/* BUTTON GRID */
+
+.buttons{
+margin-top:30px;
+display:grid;
+grid-template-columns:repeat(4,1fr);
+gap:15px;
+}
+
+.menuBtn{
+background:#004aad;
+border-radius:10px;
+padding:20px;
+text-align:center;
+cursor:pointer;
+box-shadow:0 2px 6px rgba(0,0,0,0.2);
+transition:0.2s;
+}
+
+.menuBtn:hover{
+transform:scale(1.05);
+}
+
+.menuBtn i{
+font-size:40px;
+color:white;
+margin-bottom:10px;
+display:block;
+}
+
+.menuBtn span{
+font-size:14px;
+font-weight:bold;
+color:white;
+}
+
+/* MOBILE */
+
+@media(max-width:768px){
+
+.buttons{
+grid-template-columns:repeat(2,1fr);
+}
+
+.menuBtn i{
+font-size:45px;
+}
+
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="loginBox">
+<div class="loginCard">
+
+<h3>Admin / Teacher Login</h3>
+
+<input id="schoolId" placeholder="School ID">
+<input id="email" placeholder="Email">
+<input id="password" type="password" placeholder="Password">
+
+<button onclick="login()">
+<i class="fas fa-right-to-bracket"></i> Login
+</button>
+
+</div>
+</div>
+
+<header>
+
+<img id="schoolLogo">
+
+<div class="centerHeader">
+<div id="schoolName">School Name</div>
+<div id="schoolAddress">School Address</div>
+<div id="activeSession">DISE Code : 000000</div>
+</div>
+
+<button id="logoutBtn" onclick="logout()">
+<i class="fas fa-sign-out-alt"></i> Logout
+</button>
+
+</header>
+
+<div class="container">
+
+<div class="grid">
+
+<div class="card">
+<div class="count" id="teachers">0</div>
+Total Teachers
+</div>
+
+<div class="card">
+<div class="count" id="admissions">0</div>
+Total Admissions
+</div>
+
+<div class="card">
+<div class="count" id="complaints">0</div>
+Total Complaints
+</div>
+
+<div class="card">
+<div class="count" id="totalFees">0</div>
+Total Fees
+</div>
+
+<div class="card">
+<div class="count" id="totalCollection">0</div>
+Total Collection
+</div>
+
+<div class="card">
+<div class="count" id="totalPending">0</div>
+Total Pending
+</div>
+
+</div>
+
+<!-- BUTTON MENU -->
+
+<div class="buttons" id="buttonsArea">
+
+<div class="menuBtn" data-page="Admission Management" onclick="location.href='admin_admissions.html'">
+<i class="fas fa-user-graduate"></i>
+<span>Admission</span>
+</div>
+
+<div class="menuBtn" data-page="Exam Management" onclick="location.href='academy.html'">
+<i class="fas fa-book"></i>
+<span>Exam</span>
+</div>
+
+<div class="menuBtn" data-page="Result Management" onclick="location.href='admin_results.html'">
+<i class="fas fa-chart-line"></i>
+<span>Results</span>
+</div>
+
+<div class="menuBtn" data-page="Fees Management" onclick="location.href='admin-fees.html'">
+<i class="fas fa-money-bill"></i>
+<span>Fees</span>
+</div>
+
+<div class="menuBtn" data-page="Complaint Management" onclick="location.href='admin_complaints.html'">
+<i class="fas fa-comment-dots"></i>
+<span>Complaints</span>
+</div>
+
+<div class="menuBtn" data-page="Study Material" onclick="location.href='admin_study.html'">
+<i class="fas fa-folder-open"></i>
+<span>Study Material</span>
+</div>
+
+<div class="menuBtn" data-page="Notice & Gallery" onclick="location.href='admin.html'">
+<i class="fas fa-bullhorn"></i>
+<span>Notice</span>
+</div>
+
+<div class="menuBtn" data-page="All Students" onclick="location.href='all-students.html'">
+<i class="fas fa-users"></i>
+<span>Students</span>
+</div>
+
+<div class="menuBtn" data-page="All Print" onclick="location.href='print.html'">
+<i class="fas fa-print"></i>
+<span>Print</span>
+</div>
+
+<div class="menuBtn" data-page="Create Teacher / Permission" onclick="location.href='admin-teacher.html'">
+<i class="fas fa-chalkboard-teacher"></i>
+<span>Teachers</span>
+</div>
+
+<div class="menuBtn" data-page="Add / Edit School Profile" onclick="location.href='school-profile.html'">
+<i class="fas fa-school"></i>
+<span>School Profile</span>
+</div>
+
+<!-- Admin Event Button Added -->
+<div class="menuBtn" data-page="Admin Event" onclick="location.href='admin-event.html'">
+<i class="fas fa-calendar"></i>
+<span>Event</span>
+</div>
+
+</div>
+
+</div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import {getFirestore,doc,getDoc,collection,getDocs,query,where}
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig={
+apiKey:"AIzaSyBj8_SjhJ9QtXu-4DigToqjBos5waZEXYw",
+authDomain:"nmpsnagguradiya-b9b94.firebaseapp.com",
+projectId:"nmpsnagguradiya-b9b94"
+};
+
+const app=initializeApp(firebaseConfig);
+const db=getFirestore(app);
+
+window.login=async function(){
+
+const schoolId=document.getElementById("schoolId").value.trim();
+const email=document.getElementById("email").value.trim();
+const password=document.getElementById("password").value.trim();
+
+if(!schoolId || !email || !password){
+alert("Enter School ID, Email & Password");
+return;
+}
+
+const schoolSnap=await getDoc(doc(db,"schools",schoolId));
+
+if(schoolSnap.exists()){
+
+const s=schoolSnap.data();
+
+if(s.adminEmail===email && s.adminPassword===password){
+
+localStorage.setItem("schoolId",schoolId);
+localStorage.setItem("role","admin");
+
+document.getElementById("loginBox").style.display="none";
+loadDashboard();
+return;
+
+}
+
+}
+
+/* TEACHER LOGIN */
+
+const teachers=await getDocs(collection(db,"teachers"));
+
+let teacherData=null;
+
+teachers.forEach(d=>{
+const t=d.data();
+if(t.schoolId===schoolId && t.email===email && t.password===password){
+teacherData=t;
+}
+});
+
+if(!teacherData){
+alert("Invalid Login");
+return;
+}
+
+localStorage.setItem("schoolId",schoolId);
+localStorage.setItem("role","teacher");
+localStorage.setItem("permissions",JSON.stringify(teacherData.pages||[]));
+
+document.getElementById("loginBox").style.display="none";
+
+applyPermissions();
+
+loadDashboard();
+
+}
+
+/* PERMISSIONS */
+
+function applyPermissions(){
+
+const role=localStorage.getItem("role");
+
+if(role!=="teacher") return;
+
+const allowed=JSON.parse(localStorage.getItem("permissions")||"[]");
+
+document.querySelectorAll(".menuBtn").forEach(btn=>{
+
+const page=btn.dataset.page;
+
+if(!allowed.includes(page)){
+btn.style.display="none";
+}
+
+});
+
+}
+
+window.logout=function(){
+
+localStorage.removeItem("schoolId");
+localStorage.removeItem("role");
+localStorage.removeItem("permissions");
+
+location.reload();
+
+}
+
+/* DASHBOARD */
+
+async function loadDashboard(){
+
+const schoolId=localStorage.getItem("schoolId");
+
+applyPermissions();
+
+/* SCHOOL */
+
+const schoolSnap=await getDoc(doc(db,"schools",schoolId));
+
+if(schoolSnap.exists()){
+const data=schoolSnap.data();
+document.getElementById("schoolName").innerText=data.name;
+document.getElementById("schoolAddress").innerText=data.address||"";
+document.getElementById("schoolLogo").src=data.logo||"";
+document.getElementById("activeSession").innerText="DISE Code : "+(data.dise||"000000");
+}
+
+/* TEACHERS */
+
+let teacherCount=0;
+const teachers=await getDocs(collection(db,"teachers"));
+
+teachers.forEach(d=>{
+if(d.data().schoolId===schoolId) teacherCount++;
+});
+
+document.getElementById("teachers").innerText=teacherCount;
+
+/* ADMISSIONS */
+
+let admissionCount=0;
+const admissions=await getDocs(collection(db,"admissions"));
+
+admissions.forEach(d=>{
+if(d.data().schoolId===schoolId) admissionCount++;
+});
+
+document.getElementById("admissions").innerText=admissionCount;
+
+/* FEES - admin-fees.html database se */
+
+let totalFees=0;
+let totalCollection=0;
+
+const admissionsSnap=await getDocs(collection(db,"admissions"));
+
+admissionsSnap.forEach(d=>{
+const s=d.data();
+if(s.schoolId===schoolId){
+const fees = Number(s.fees||0);
+const vehicle = Number(s.vehicleFees||0);
+const old = Number(s.oldFees||0);
+const paid = Number(s.paid||0);
+totalFees += fees + vehicle + old;
+totalCollection += paid;
+}
+});
+
+document.getElementById("totalFees").innerText = totalFees;
+document.getElementById("totalCollection").innerText = totalCollection;
+document.getElementById("totalPending").innerText = totalFees - totalCollection;
+
+}
+
+document.addEventListener("DOMContentLoaded",()=>{
+
+const schoolId=localStorage.getItem("schoolId");
+
+if(schoolId){
+
+document.getElementById("loginBox").style.display="none";
+loadDashboard();
+
+}
+
+});
+
+</script>
+
+</body>
+</html>
