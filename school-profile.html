@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>School Profile</title>
+
+<style>
+
+body{font-family:Arial;background:#f2f2f2}
+
+.container{
+max-width:700px;
+margin:30px auto;
+background:white;
+padding:20px;
+border-radius:10px
+}
+
+input,button{
+width:100%;
+padding:10px;
+margin:8px 0
+}
+
+button{
+background:#004aad;
+color:white;
+border:none;
+border-radius:8px;
+cursor:pointer
+}
+
+img{
+width:120px;
+height:120px;
+border-radius:10px;
+margin-top:10px;
+object-fit:cover
+}
+
+.sessionBox{
+background:#f8f8f8;
+padding:10px;
+margin-top:10px;
+border-radius:8px
+}
+
+.sessionItem{
+display:flex;
+justify-content:space-between;
+align-items:center;
+background:white;
+padding:8px;
+margin:5px 0;
+border-radius:6px;
+box-shadow:0 1px 3px rgba(0,0,0,0.1)
+}
+
+.badge{
+background:#28a745;
+color:white;
+padding:3px 8px;
+border-radius:5px;
+font-size:12px;
+margin-left:10px
+}
+
+.sessionBtns button{
+width:auto;
+margin-left:5px;
+padding:5px 10px
+}
+
+.editBtn{background:#ffc107;color:black}
+.deleteBtn{background:#dc3545}
+
+</style>
+
+</head>
+<body>
+
+<div class="container">
+
+<h2>School Profile</h2>
+
+<input id="sname" placeholder="School Name">
+<input id="semail" placeholder="Admin Email">
+<input id="spass" placeholder="Admin Password">
+<input id="saddress" placeholder="Address">
+<input id="sdise" placeholder="DISE Code">
+<input id="srecognition" placeholder="Recognition ID">
+
+<label>School Logo</label>
+<input type="file" id="logo">
+
+<img id="logoPreview">
+
+<button onclick="saveProfile()">Save Profile</button>
+
+
+<hr>
+
+<h3>Session Management</h3>
+
+<input id="newSession" placeholder="Example: 2025-26">
+
+<button onclick="addSession()">Create Session</button>
+
+<div class="sessionBox" id="sessionList"></div>
+
+</div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+apiKey:"AIzaSyBj8_SjhJ9QtXu-4DigToqjBos5waZEXYw",
+authDomain:"nmpsnagguradiya-b9b94.firebaseapp.com",
+projectId:"nmpsnagguradiya-b9b94",
+storageBucket:"nmpsnagguradiya-b9b94.firebasestorage.app",
+messagingSenderId:"811957568318",
+appId:"1:811957568318:web:7058de9ba52df9d6bae26f"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const schoolId = localStorage.getItem("schoolId") || "school_001";
+
+let currentLogo="";
+let sessions=[];
+let currentSession="";
+
+const logoInput=document.getElementById("logo");
+const preview=document.getElementById("logoPreview");
+
+logoInput.addEventListener("change",()=>{
+const file=logoInput.files[0];
+if(file){
+preview.src=URL.createObjectURL(file);
+}
+});
+
+
+async function uploadImage(file){
+
+const formData=new FormData();
+formData.append("image",file);
+
+const res=await fetch("https://api.imgbb.com/1/upload?key=21000d5a5d14fcef4b6af4d13647da5a",{
+method:"POST",
+body:formData
+});
+
+const data=await res.json();
+
+if(data.success){
+return data.data.url;
+}else{
+alert("Image upload failed");
+return "";
+}
+
+}
+
+
+
+async function loadProfile(){
+
+const ref=doc(db,"schools",schoolId);
+const snap=await getDoc(ref);
+
+if(snap.exists()){
+
+const d=snap.data();
+
+sname.value=d.name||"";
+semail.value=d.adminEmail||"";
+spass.value=d.adminPassword||"";
+saddress.value=d.address||"";
+sdise.value=d.dise||"";
+srecognition.value=d.recognition||"";
+
+sessions=d.sessions||[];
+currentSession=d.currentSession||"";
+
+if(d.logo){
+preview.src=d.logo;
+currentLogo=d.logo;
+}
+
+renderSessions();
+
+}
+
+}
+
+loadProfile();
+
+
+
+window.saveProfile=async function(){
+
+let logoURL=currentLogo;
+
+const file=logoInput.files[0];
+
+if(file){
+
+logoURL=await uploadImage(file);
+
+if(!logoURL) return;
+
+}
+
+await setDoc(doc(db,"schools",schoolId),{
+
+name:sname.value,
+adminEmail:semail.value,
+adminPassword:spass.value,
+address:saddress.value,
+dise:sdise.value,
+recognition:srecognition.value,
+logo:logoURL,
+sessions:sessions,
+currentSession:currentSession
+
+},{merge:true});
+
+alert("Profile saved successfully");
+
+}
+
+
+
+window.addSession=function(){
+
+const s=newSession.value.trim();
+
+if(!s) return alert("Enter session");
+
+if(sessions.includes(s)) return alert("Session already exists");
+
+sessions.push(s);
+
+newSession.value="";
+
+renderSessions();
+
+saveProfile();
+
+}
+
+
+
+function renderSessions(){
+
+let html="";
+
+sessions.forEach((s,i)=>{
+
+html+=`
+<div class="sessionItem">
+
+<div>
+
+${s}
+
+${s===currentSession?'<span class="badge">Active</span>':''}
+
+</div>
+
+<div class="sessionBtns">
+
+<button onclick="activateSession('${s}')">Activate</button>
+
+<button class="editBtn" onclick="editSession(${i})">Edit</button>
+
+<button class="deleteBtn" onclick="deleteSession(${i})">Delete</button>
+
+</div>
+
+</div>
+`;
+
+});
+
+sessionList.innerHTML=html;
+
+}
+
+
+
+window.activateSession=function(s){
+
+currentSession=s;
+
+localStorage.setItem("session",s);
+
+renderSessions();
+
+saveProfile();
+
+}
+
+
+
+window.editSession=function(i){
+
+const newName=prompt("Edit Session",sessions[i]);
+
+if(!newName) return;
+
+sessions[i]=newName;
+
+if(currentSession===sessions[i]){
+currentSession=newName;
+}
+
+renderSessions();
+
+saveProfile();
+
+}
+
+
+
+window.deleteSession=function(i){
+
+if(!confirm("Delete this session?")) return;
+
+if(sessions[i]===currentSession){
+
+alert("Cannot delete active session");
+
+return;
+
+}
+
+sessions.splice(i,1);
+
+renderSessions();
+
+saveProfile();
+
+}
+
+</script>
+
+</body>
+  </html>
