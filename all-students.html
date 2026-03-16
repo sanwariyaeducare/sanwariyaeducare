@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Admission Admin Panel</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<style>
+
+body{
+font-family:Arial;
+margin:0;
+background:#f2f2f2;
+}
+
+header{
+background:#004aad;
+color:white;
+padding:16px;
+text-align:center;
+font-size:22px;
+}
+
+.container{
+padding:20px;
+}
+
+.big-buttons{
+display:flex;
+gap:20px;
+flex-wrap:wrap;
+margin-bottom:20px;
+}
+
+.big-btn{
+flex:1;
+min-width:200px;
+background:white;
+padding:20px;
+border-radius:10px;
+display:flex;
+align-items:center;
+gap:15px;
+font-size:18px;
+font-weight:bold;
+cursor:pointer;
+box-shadow:0 0 8px rgba(0,0,0,0.15);
+}
+
+.icon{
+font-size:30px;
+}
+
+.dashboard{
+display:flex;
+gap:20px;
+flex-wrap:wrap;
+margin-bottom:20px;
+}
+
+.box{
+background:white;
+padding:15px;
+border-radius:8px;
+flex:1;
+text-align:center;
+box-shadow:0 0 5px rgba(0,0,0,0.2);
+}
+
+.controls{
+margin-bottom:15px;
+}
+
+input,select{
+padding:8px;
+margin:5px;
+}
+
+table{
+width:100%;
+background:white;
+border-collapse:collapse;
+}
+
+th,td{
+padding:8px;
+border:1px solid #ddd;
+text-align:center;
+}
+
+img{
+width:50px;
+border-radius:5px;
+}
+
+button{
+padding:6px 10px;
+border:none;
+border-radius:5px;
+cursor:pointer;
+margin:2px;
+}
+
+.edit{background:#ffc107;}
+.photo{background:#6f42c1;color:white;}
+.delete{background:red;color:white;}
+.print{background:#17a2b8;color:white;}
+.export{background:#28a745;color:white;}
+
+</style>
+</head>
+
+<body>
+
+<header>Admission Admin Panel</header>
+
+<div class="container">
+
+<div class="big-buttons">
+
+<div class="big-btn" onclick="window.location.href='admission.html'">
+<span class="icon">➕</span>
+Add Students
+</div>
+
+<div class="big-btn" onclick="window.location.href='all-students.html'">
+<span class="icon">👨‍🎓</span>
+All Students
+</div>
+
+</div>
+
+<div class="dashboard">
+<div class="box">
+Total Admissions
+<h2 id="total">0</h2>
+</div>
+</div>
+
+<div class="controls">
+
+<input type="text" id="search" placeholder="Search Name / Mobile">
+
+<select id="classFilter">
+<option value="all">All Classes</option>
+<option>Nursery</option>
+<option>LKG</option>
+<option>UKG</option>
+<option>1</option>
+<option>2</option>
+<option>3</option>
+<option>4</option>
+<option>5</option>
+<option>6</option>
+<option>7</option>
+<option>8</option>
+<option>9</option>
+<option>10</option>
+<option>11</option>
+<option>12</option>
+</select>
+
+<select id="classImport">
+<option value="">Select Class For Import</option>
+<option>Nursery</option>
+<option>LKG</option>
+<option>UKG</option>
+<option>1</option>
+<option>2</option>
+<option>3</option>
+<option>4</option>
+<option>5</option>
+<option>6</option>
+<option>7</option>
+<option>8</option>
+<option>9</option>
+<option>10</option>
+<option>11</option>
+<option>12</option>
+</select>
+
+<input type="file" id="excelImport">
+
+<button class="export" onclick="exportAll()">Export All Students</button>
+
+</div>
+
+<table>
+
+<thead>
+<tr>
+<th>Name</th>
+<th>Father</th>
+<th>Mobile</th>
+<th>Village</th>
+<th>Class</th>
+<th>Photo</th>
+<th>Actions</th>
+</tr>
+</thead>
+
+<tbody id="list"></tbody>
+
+</table>
+
+</div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore,collection,getDocs,doc,updateDoc,deleteDoc,addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig={
+apiKey:"AIzaSyBj8_SjhJ9QtXu-4DigToqjBos5waZEXYw",
+authDomain:"nmpsnagguradiya-b9b94.firebaseapp.com",
+projectId:"nmpsnagguradiya-b9b94"
+};
+
+const app=initializeApp(firebaseConfig);
+const db=getFirestore(app);
+
+const schoolId=localStorage.getItem("schoolId")||"school_001";
+const activeSession=localStorage.getItem("activeSession")||"2025-26";
+
+let admissions=[];
+
+loadAdmissions();
+
+async function loadAdmissions(){
+
+admissions=[];
+
+const snapshot=await getDocs(collection(db,"admissions"));
+
+snapshot.forEach(docSnap=>{
+
+const data=docSnap.data();
+
+if(data.schoolId!==schoolId) return;
+if(data.session!==activeSession) return;
+
+data.id=docSnap.id;
+
+admissions.push(data);
+
+});
+
+renderTable();
+
+document.getElementById("total").innerText=admissions.length;
+
+}
+
+function renderTable(){
+
+const search=document.getElementById("search").value.toLowerCase();
+const classFilter=document.getElementById("classFilter").value;
+
+const table=document.getElementById("list");
+table.innerHTML="";
+
+admissions.forEach(data=>{
+
+if(search && !data.name.toLowerCase().includes(search) && !data.mobile.includes(search)) return;
+
+if(classFilter!="all" && data.class!=classFilter) return;
+
+table.innerHTML+=`
+
+<tr>
+
+<td>${data.name}</td>
+<td>${data.father}</td>
+<td>${data.mobile}</td>
+<td>${data.village}</td>
+<td>${data.class}</td>
+
+<td><img src="${data.photo||""}"></td>
+
+<td>
+
+<button class="edit" onclick="edit('${data.id}')">Edit</button>
+
+<button class="print" onclick="printForm('${data.id}')">Print</button>
+
+<button class="photo" onclick="uploadPhoto('${data.id}')">Photo</button>
+
+<button class="delete" onclick="remove('${data.id}')">Delete</button>
+
+</td>
+
+</tr>
+
+`;
+
+});
+
+}
+
+/* EDIT FULL FORM */
+
+window.edit=function(id){
+
+window.location.href="admission.html?id="+id;
+
+}
+
+/* PRINT */
+
+window.printForm=function(id){
+
+window.open("print-form.html?id="+id);
+
+}
+
+/* DELETE */
+
+window.remove=async function(id){
+
+if(confirm("Delete admission?")){
+
+await deleteDoc(doc(db,"admissions",id));
+
+loadAdmissions();
+
+}
+
+}
+
+/* PHOTO */
+
+window.uploadPhoto=function(id){
+
+const input=document.createElement("input");
+input.type="file";
+
+input.onchange=async e=>{
+
+const file=e.target.files[0];
+
+const formData=new FormData();
+formData.append("image",file);
+
+const res=await fetch("https://api.imgbb.com/1/upload?key=21000d5a5d14fcef4b6af4d13647da5a",{
+method:"POST",
+body:formData
+});
+
+const data=await res.json();
+
+await updateDoc(doc(db,"admissions",id),{
+photo:data.data.url
+});
+
+loadAdmissions();
+
+};
+
+input.click();
+
+}
+
+/* EXPORT ALL */
+
+window.exportAll=function(){
+
+const ws=XLSX.utils.json_to_sheet(admissions);
+const wb=XLSX.utils.book_new();
+
+XLSX.utils.book_append_sheet(wb,ws,"Students");
+
+XLSX.writeFile(wb,"all_students.xlsx");
+
+}
+
+/* BULK IMPORT */
+
+document.getElementById("excelImport").addEventListener("change",function(e){
+
+const selectedClass=document.getElementById("classImport").value;
+
+if(!selectedClass){
+alert("Select Class First");
+return;
+}
+
+const reader=new FileReader();
+
+reader.onload=async function(evt){
+
+const data=new Uint8Array(evt.target.result);
+
+const workbook=XLSX.read(data,{type:'array'});
+
+const sheet=workbook.Sheets[workbook.SheetNames[0]];
+
+const json=XLSX.utils.sheet_to_json(sheet);
+
+for(let s of json){
+
+s.class=selectedClass;
+s.schoolId=schoolId;
+s.session=activeSession;
+
+await addDoc(collection(db,"admissions"),s);
+
+}
+
+alert("Bulk Students Added");
+
+loadAdmissions();
+
+}
+
+reader.readAsArrayBuffer(e.target.files[0]);
+
+});
+
+document.getElementById("search").addEventListener("keyup",renderTable);
+document.getElementById("classFilter").addEventListener("change",renderTable);
+
+</script>
+
+</body>
+</html>
