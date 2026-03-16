@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Teacher Management - Multi-School ERP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+<style>
+body{font-family:Arial;margin:0;background:#f2f2f2;}
+.container{max-width:600px;margin:20px auto;padding:20px;background:white;border-radius:10px;box-shadow:0 0 10px rgba(0,0,0,0.2);}
+h2{margin-bottom:20px;}
+input, select, button{padding:8px;margin:5px 0;}
+input, select{width:100%;}
+button{border:none;background:#004aad;color:white;font-size:14px;border-radius:5px;cursor:pointer;}
+button:hover{background:#003080;}
+.table-wrapper{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;margin-top:15px;}
+table, th, td{border:1px solid #ccc;}
+th, td{padding:8px;text-align:center;}
+th{background:#004aad;color:white;}
+.actions button{padding:5px 8px;margin:0 2px;font-size:12px;}
+img#preview{width:60px;height:60px;border-radius:50%;object-fit:cover;}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+<h2>Teacher Management</h2>
+
+<input type="hidden" id="teacherId">
+
+<input id="tname" placeholder="Teacher Name" required>
+<input id="temail" placeholder="Email" required>
+<input id="tpass" placeholder="Password" required>
+
+<label>Teacher Photo</label>
+<input type="file" id="tphoto">
+<img id="preview" style="display:none;margin-top:5px;">
+
+<label>Allowed Pages (Ctrl+Click multiple)</label>
+<select id="pages" multiple size="5">
+
+<option>Admission Management</option>
+<option>Exam Management</option>
+<option>Result Management</option>
+<option>Fees Management</option>
+<option>Complaint Management</option>
+<option>Study Material</option>
+<option>Notice & Gallery</option>
+<option>All Students</option>
+<option>All Print</option>
+<option>Create Teacher / Permission</option>
+<option>Add / Edit School Profile</option>
+
+</select>
+
+<button onclick="saveTeacher()"><i class="fas fa-plus"></i> Save Teacher</button>
+
+<div class="table-wrapper">
+
+<table>
+
+<thead>
+<tr>
+<th>School ID</th>
+<th>Name</th>
+<th>Email</th>
+<th>Photo</th>
+<th>Allowed Pages</th>
+<th>Actions</th>
+</tr>
+</thead>
+
+<tbody id="teacherTable"></tbody>
+
+</table>
+
+</div>
+</div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import {
+getFirestore,
+collection,
+doc,
+setDoc,
+getDocs,
+deleteDoc,
+getDoc
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+
+const firebaseConfig = {
+
+apiKey: "AIzaSyBj8_SjhJ9QtXu-4DigToqjBos5waZEXYw",
+
+authDomain: "nmpsnagguradiya-b9b94.firebaseapp.com",
+
+projectId: "nmpsnagguradiya-b9b94",
+
+storageBucket: "nmpsnagguradiya-b9b94.firebasestorage.app",
+
+messagingSenderId: "811957568318",
+
+appId: "1:811957568318:web:7058de9ba52df9d6bae26f"
+
+};
+
+const app = initializeApp(firebaseConfig);
+
+const db = getFirestore(app);
+
+
+const teacherIdInput = document.getElementById("teacherId");
+
+const nameInput = document.getElementById("tname");
+
+const emailInput = document.getElementById("temail");
+
+const passInput = document.getElementById("tpass");
+
+const pagesSelect = document.getElementById("pages");
+
+const photoInput = document.getElementById("tphoto");
+
+const previewImg = document.getElementById("preview");
+
+const tableBody = document.getElementById("teacherTable");
+
+
+const currentSchoolId = localStorage.getItem("schoolId") || "school_001";
+
+
+photoInput.addEventListener("change", ()=>{
+
+const file = photoInput.files[0];
+
+if(file){
+
+previewImg.src = URL.createObjectURL(file);
+
+previewImg.style.display="block";
+
+}
+
+});
+
+
+async function uploadImg(file){
+
+const key = "21000d5a5d14fcef4b6af4d13647da5a";
+
+const fd = new FormData();
+
+fd.append("image", file);
+
+const res = await fetch(`https://api.imgbb.com/1/upload?key=${key}`,{
+
+method:"POST",
+
+body:fd
+
+});
+
+const data = await res.json();
+
+return data.data.url;
+
+}
+
+
+async function loadTeachers(){
+
+tableBody.innerHTML="";
+
+const snap = await getDocs(collection(db,"teachers"));
+
+snap.forEach(d=>{
+
+const t = d.data();
+
+if(t.schoolId !== currentSchoolId) return;
+
+const tr = document.createElement("tr");
+
+tr.innerHTML=`
+
+<td>${t.schoolId}</td>
+
+<td>${t.name}</td>
+
+<td>${t.email}</td>
+
+<td>${t.photo ? `<img src="${t.photo}" style="width:50px;height:50px;border-radius:50%;">` : ""}</td>
+
+<td>${(t.pages||[]).join(", ")}</td>
+
+<td class="actions">
+
+<button onclick="editTeacher('${d.id}')"><i class="fas fa-edit"></i></button>
+
+<button onclick="deleteTeacher('${d.id}')"><i class="fas fa-trash"></i></button>
+
+</td>
+
+`;
+
+tableBody.appendChild(tr);
+
+});
+
+}
+
+loadTeachers();
+
+
+window.saveTeacher = async function(){
+
+const name = nameInput.value.trim();
+
+const email = emailInput.value.trim();
+
+const password = passInput.value.trim();
+
+const pages = Array.from(pagesSelect.selectedOptions).map(o=>o.value);
+
+const file = photoInput.files[0];
+
+
+if(!name || !email || !password){
+
+alert("Fill all fields");
+
+return;
+
+}
+
+
+let photoUrl = "";
+
+if(file) photoUrl = await uploadImg(file);
+
+
+let id = teacherIdInput.value;
+
+if(!id) id = `${currentSchoolId}_${Date.now()}`;
+
+
+await setDoc(doc(db,"teachers",id),{
+
+schoolId: currentSchoolId,
+
+name,
+
+email,
+
+password,
+
+pages,
+
+photo: photoUrl
+
+},{merge:true});
+
+
+alert("Teacher Saved!");
+
+teacherIdInput.value="";
+
+nameInput.value="";
+
+emailInput.value="";
+
+passInput.value="";
+
+pagesSelect.selectedIndex=-1;
+
+photoInput.value="";
+
+previewImg.style.display="none";
+
+loadTeachers();
+
+}
+
+
+window.editTeacher = async function(id){
+
+const docSnap = await getDoc(doc(db,"teachers",id));
+
+if(docSnap.exists()){
+
+const t = docSnap.data();
+
+if(t.schoolId !== currentSchoolId) return;
+
+teacherIdInput.value = id;
+
+nameInput.value = t.name;
+
+emailInput.value = t.email;
+
+passInput.value = t.password;
+
+Array.from(pagesSelect.options).forEach(o=>{
+
+o.selected = t.pages?.includes(o.value);
+
+});
+
+if(t.photo){
+
+previewImg.src = t.photo;
+
+previewImg.style.display="block";
+
+}
+
+}
+
+}
+
+
+window.deleteTeacher = async function(id){
+
+if(confirm("Delete this teacher?")){
+
+await deleteDoc(doc(db,"teachers",id));
+
+loadTeachers();
+
+}
+
+}
+
+</script>
+
+</body>
+</html>
