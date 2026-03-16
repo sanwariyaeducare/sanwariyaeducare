@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Student ID Card</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+
+body{
+font-family:Arial;
+margin:0;
+background:#f2f4f8;
+}
+
+.container{
+max-width:1200px;
+margin:auto;
+padding:20px;
+}
+
+select,button{
+padding:10px;
+margin:5px;
+}
+
+button{
+background:#004aad;
+color:white;
+border:none;
+cursor:pointer;
+}
+
+#studentList{
+margin-top:10px;
+background:white;
+padding:10px;
+border-radius:6px;
+max-height:200px;
+overflow:auto;
+}
+
+/* PVC CARD SIZE */
+
+.id-card{
+border-radius:8px;
+border:2px solid #000;
+overflow:hidden;
+display:flex;
+flex-direction:column;
+justify-content:space-between;
+font-size:9px;
+background:white;
+}
+
+/* PORTRAIT */
+
+.portrait{
+width:54mm;
+height:85.6mm;
+}
+
+/* LANDSCAPE */
+
+.landscape{
+width:85.6mm;
+height:54mm;
+}
+
+#idArea{
+display:flex;
+flex-wrap:wrap;
+gap:10px;
+margin-top:20px;
+}
+
+*{
+-webkit-print-color-adjust:exact !important;
+print-color-adjust:exact !important;
+}
+
+.top{
+padding:4px;
+color:white;
+text-align:center;
+}
+
+.school-header{
+display:flex;
+align-items:center;
+justify-content:space-between;
+}
+
+.school-header img{
+width:12px;
+}
+
+.school-name{
+flex:1;
+font-weight:bold;
+font-size:9px;
+text-align:center;
+}
+
+.school-info{
+font-size:7px;
+}
+
+.card-title{
+font-size:9px;
+font-weight:bold;
+margin-top:2px;
+}
+
+.student-section{
+display:flex;
+padding:4px;
+gap:4px;
+}
+
+.student-details{
+flex:1;
+font-size:8px;
+line-height:1.3;
+}
+
+.student-photo{
+width:28px;
+height:34px;
+object-fit:cover;
+border:1px solid #000;
+}
+
+.qr{
+text-align:center;
+padding-bottom:2px;
+}
+
+.qr img{
+width:22px;
+}
+
+/* styles */
+
+.style1 .top{background:#004aad;}
+.style1{background:linear-gradient(#004aad 40%,#e6f0ff 40%);}
+
+.style2 .top{background:#008000;}
+.style2{background:linear-gradient(#008000 40%,#e8ffe8 40%);}
+
+.style3 .top{background:#800080;}
+.style3{background:linear-gradient(#800080 40%,#f3e6ff 40%);}
+
+.style4 .top{background:#c40000;}
+.style4{background:linear-gradient(#c40000 40%,#ffe6e6 40%);}
+
+.style5 .top{background:#ff8c00;}
+.style5{background:linear-gradient(#ff8c00 40%,#fff2e0 40%);}
+
+.style6 .top{background:#0097a7;}
+.style6{background:linear-gradient(#0097a7 40%,#e0f9fc 40%);}
+
+.style7 .top{background:#333;}
+.style7{background:linear-gradient(#333 40%,#eeeeee 40%);}
+
+@media print{
+.container{display:none;}
+body{background:white;}
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<select id="sessionSelect"></select>
+
+<select id="classSelect">
+<option value="">Select Class</option>
+<option>Nursery</option>
+<option>LKG</option>
+<option>UKG</option>
+<option>1</option>
+<option>2</option>
+<option>3</option>
+<option>4</option>
+<option>5</option>
+<option>6</option>
+<option>7</option>
+<option>8</option>
+<option>9</option>
+<option>10</option>
+<option>11</option>
+<option>12</option>
+</select>
+
+<select id="styleSelect">
+<option value="style1">Style 1</option>
+<option value="style2">Style 2</option>
+<option value="style3">Style 3</option>
+<option value="style4">Style 4</option>
+<option value="style5">Style 5</option>
+<option value="style6">Style 6</option>
+<option value="style7">Style 7</option>
+</select>
+
+<select id="orientationSelect">
+<option value="portrait">Portrait</option>
+<option value="landscape">Landscape</option>
+</select>
+
+<br>
+
+<button onclick="loadStudents()">Load Students</button>
+
+<div id="studentList"></div>
+
+<br>
+
+<button onclick="generateCards()">Generate ID Card</button>
+<button onclick="window.print()">Print</button>
+
+</div>
+
+<div id="idArea"></div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import {
+getFirestore,
+collection,
+getDocs,
+doc,
+getDoc,
+query,
+where
+}
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig={
+apiKey:"AIzaSyBj8_SjhJ9QtXu-4DigToqjBos5waZEXYw",
+authDomain:"nmpsnagguradiya-b9b94.firebaseapp.com",
+projectId:"nmpsnagguradiya-b9b94"
+};
+
+const app=initializeApp(firebaseConfig);
+const db=getFirestore(app);
+
+const schoolId=localStorage.getItem("schoolId")||"school_001";
+
+const sessionSelect=document.getElementById("sessionSelect");
+const classSelect=document.getElementById("classSelect");
+const studentList=document.getElementById("studentList");
+const idArea=document.getElementById("idArea");
+
+let schoolData={};
+let students=[];
+
+async function loadSchool(){
+
+const snap=await getDoc(doc(db,"schools",schoolId));
+
+if(snap.exists()){
+
+schoolData=snap.data();
+
+let sessions=schoolData.sessions||[];
+
+sessionSelect.innerHTML='<option value="">Select Session</option>'+
+sessions.map(s=>`<option value="${s}">${s}</option>`).join("");
+
+}
+
+}
+
+loadSchool();
+
+window.loadStudents=async function(){
+
+const session=sessionSelect.value;
+const cls=classSelect.value;
+
+if(!session || !cls){
+alert("Select session and class");
+return;
+}
+
+const q=query(
+collection(db,"admissions"),
+where("schoolId","==",schoolId),
+where("session","==",session),
+where("class","==",cls)
+);
+
+const snap=await getDocs(q);
+
+students=snap.docs.map(d=>({id:d.id,...d.data()}));
+
+let html="";
+
+students.forEach((s,i)=>{
+
+html+=`
+<label>
+<input type="checkbox" class="studentCheck" value="${i}" checked>
+${s.name} - Roll ${s.roll}
+</label><br>
+`;
+
+});
+
+studentList.innerHTML=html;
+
+}
+
+window.generateCards=function(){
+
+const style=document.getElementById("styleSelect").value;
+const orientation=document.getElementById("orientationSelect").value;
+
+let html="";
+
+document.querySelectorAll(".studentCheck:checked").forEach(cb=>{
+
+const st=students[cb.value];
+
+const qr=`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=https://nmpsnagguradiya-boop.github.io/nmps/index.html`;
+
+html+=`
+
+<div class="id-card ${style} ${orientation}">
+
+<div class="top">
+
+<div class="school-header">
+
+<img src="${schoolData.logo}">
+<div class="school-name">${schoolData.name}</div>
+<img src="${schoolData.logo}">
+
+</div>
+
+<div class="school-info">
+${schoolData.address}<br>
+DISE: ${schoolData.dise}
+</div>
+
+<div class="card-title">ID CARD</div>
+
+</div>
+
+<div class="student-section">
+
+<div class="student-details">
+
+<b>${st.name}</b><br>
+Father: ${st.father}<br>
+Mobile: ${st.mobile||""}<br>
+Village/City: ${st.village||st.city||""}<br>
+Class: ${st.class}<br>
+Roll: ${st.roll}
+
+</div>
+
+<img class="student-photo" src="${st.photo||""}">
+
+</div>
+
+<div class="qr">
+<img src="${qr}">
+</div>
+
+</div>
+
+`;
+
+});
+
+idArea.innerHTML=html;
+
+}
+
+</script>
+
+</body>
+</html>
