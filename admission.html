@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Student Admission</title>
+<style>
+body{font-family:Arial;margin:0;background:#f2f2f2;}
+header{background:#004aad;color:white;padding:15px;text-align:center;font-size:22px;}
+.container{padding:20px;max-width:800px;margin:auto;}
+form{background:white;padding:20px;border-radius:10px;box-shadow:0 0 10px rgba(0,0,0,0.2);}
+input,select,textarea{width:100%;padding:10px;margin-top:10px;border-radius:5px;border:1px solid #ccc;}
+button{margin-top:15px;background:#004aad;color:white;padding:12px;border:none;width:100%;border-radius:5px;font-size:16px;cursor:pointer;}
+.success{color:green;text-align:center;margin-top:10px;}
+table{width:100%;margin-top:20px;background:white;border-collapse:collapse;}
+table th,table td{border:1px solid #ccc;padding:8px;text-align:center;}
+img{width:50px;border-radius:5px;}
+</style>
+</head>
+<body>
+
+<header>Student Admission Form</header>
+
+<div class="container">
+
+<form id="form">
+<input type="hidden" id="studentId">
+
+<input type="text" id="name" placeholder="Student Name" required>
+<input type="text" id="father" placeholder="Father Name" required>
+<input type="text" id="mobile" placeholder="Mobile Number" required>
+
+<input type="text" id="village" placeholder="Village">
+<input type="text" id="city" placeholder="City">
+<input type="text" id="post" placeholder="Post">
+<input type="text" id="district" placeholder="District">
+<input type="text" id="state" placeholder="State">
+<input type="text" id="national" placeholder="Nationality">
+
+<input type="text" id="sssm" placeholder="SSSM ID">
+<input type="text" id="family" placeholder="Family ID">
+<input type="text" id="apar" placeholder="APAR ID">
+<input type="text" id="adhar" placeholder="Aadhar Card">
+
+<input type="text" id="caste" placeholder="Caste">
+<input type="text" id="category" placeholder="Category">
+
+<input type="text" id="roll" placeholder="Roll Number">
+<input type="text" id="scholer" placeholder="Scholar Number">
+
+<input type="text" id="admissionDate" placeholder="Admission Date (dd/mm/yyyy)">
+
+<select id="class">
+<option>Nursery</option>
+<option>LKG</option>
+<option>UKG</option>
+<option>1</option>
+<option>2</option>
+<option>3</option>
+<option>4</option>
+<option>5</option>
+<option>6</option>
+<option>7</option>
+<option>8</option>
+<option>9</option>
+<option>10</option>
+<option>11</option>
+<option>12</option>
+</select>
+
+<input type="text" id="dob" placeholder="Date Of Birth (dd/mm/yyyy)">
+<textarea id="message" placeholder="Message"></textarea>
+
+<label>Student Photo</label>
+<input type="file" id="photo">
+<img id="previewPhoto" src="" style="margin-top:10px;max-width:100px;display:none;border-radius:5px;">
+
+<button type="submit">Submit Admission</button>
+<div class="success" id="msg"></div>
+</form>
+
+<h3>Total Students : <span id="total">0</span></h3>
+
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Class</th>
+<th>Mobile</th>
+<th>Photo</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody id="studentList"></tbody>
+</table>
+
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore,collection,addDoc,getDocs,doc,updateDoc,deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig={
+apiKey:"AIzaSyBj8_SjhJ9QtXu-4DigToqjBos5waZEXYw",
+authDomain:"nmpsnagguradiya-b9b94.firebaseapp.com",
+projectId:"nmpsnagguradiya-b9b94"
+};
+
+const app=initializeApp(firebaseConfig);
+const db=getFirestore(app);
+
+const schoolId = localStorage.getItem("schoolId") || "school_001";
+const session = localStorage.getItem("activeSession") || "2025-26";
+
+let students=[];
+
+async function uploadImgBB(file){
+  const formData=new FormData();
+  formData.append("image",file);
+  const res=await fetch("https://api.imgbb.com/1/upload?key=21000d5a5d14fcef4b6af4d13647da5a",{
+    method:"POST",
+    body:formData
+  });
+  const data=await res.json();
+  return data.data.url;
+}
+
+const form=document.getElementById("form");
+
+form.addEventListener("submit", async function(e){
+  e.preventDefault();
+  const id=document.getElementById("studentId").value;
+
+  let photoURL=document.getElementById("previewPhoto").src || "";
+  const file=document.getElementById("photo").files[0];
+  if(file){
+    photoURL=await uploadImgBB(file);
+  }
+
+  const studentData={
+    schoolId,
+    session,
+    name:document.getElementById("name").value,
+    father:document.getElementById("father").value,
+    mobile:document.getElementById("mobile").value,
+    village:document.getElementById("village").value,
+    city:document.getElementById("city").value,
+    post:document.getElementById("post").value,
+    district:document.getElementById("district").value,
+    state:document.getElementById("state").value,
+    national:document.getElementById("national").value,
+    sssm:document.getElementById("sssm").value,
+    family:document.getElementById("family").value,
+    apar:document.getElementById("apar").value,
+    adhar:document.getElementById("adhar").value,
+    caste:document.getElementById("caste").value,
+    category:document.getElementById("category").value,
+    roll:document.getElementById("roll").value,
+    scholer:document.getElementById("scholer").value,
+    admissionDate:document.getElementById("admissionDate").value,
+    class:document.getElementById("class").value,
+    dob:document.getElementById("dob").value,
+    message:document.getElementById("message").value,
+    photo:photoURL
+  };
+
+  if(id){ // Edit
+    await updateDoc(doc(db,"admissions",id), studentData);
+    document.getElementById("msg").innerText="Admission Updated Successfully";
+  }else{ // New
+    await addDoc(collection(db,"admissions"), studentData);
+    document.getElementById("msg").innerText="Admission Submitted Successfully";
+  }
+
+  form.reset();
+  document.getElementById("studentId").value="";
+  document.getElementById("previewPhoto").style.display="none";
+  loadStudents();
+});
+
+async function loadStudents(){
+  const querySnapshot=await getDocs(collection(db,"admissions"));
+  let html="";
+  let count=0;
+  students=[];
+  querySnapshot.forEach(docSnap=>{
+    const data=docSnap.data();
+    data.id=docSnap.id;
+    if(data.schoolId!==schoolId) return;
+    if(data.session!==session) return;
+    students.push(data);
+    count++;
+    html+=`<tr>
+      <td>${data.name}</td>
+      <td>${data.class}</td>
+      <td>${data.mobile}</td>
+      <td><img src="${data.photo||''}" width="40"></td>
+      <td>
+        <button onclick="editStudent('${data.id}')">Edit</button>
+        <button onclick="deleteStudent('${data.id}')">Delete</button>
+      </td>
+    </tr>`;
+  });
+  document.getElementById("studentList").innerHTML=html;
+  document.getElementById("total").innerText=count;
+}
+
+window.editStudent = function(id){
+  const s = students.find(x=>x.id===id);
+  if(!s) return;
+  document.getElementById("studentId").value=s.id;
+  document.getElementById("name").value=s.name||"";
+  document.getElementById("father").value=s.father||"";
+  document.getElementById("mobile").value=s.mobile||"";
+  document.getElementById("village").value=s.village||"";
+  document.getElementById("city").value=s.city||"";
+  document.getElementById("post").value=s.post||"";
+  document.getElementById("district").value=s.district||"";
+  document.getElementById("state").value=s.state||"";
+  document.getElementById("national").value=s.national||"";
+  document.getElementById("sssm").value=s.sssm||"";
+  document.getElementById("family").value=s.family||"";
+  document.getElementById("apar").value=s.apar||"";
+  document.getElementById("adhar").value=s.adhar||"";
+  document.getElementById("caste").value=s.caste||"";
+  document.getElementById("category").value=s.category||"";
+  document.getElementById("roll").value=s.roll||"";
+  document.getElementById("scholer").value=s.scholer||"";
+  document.getElementById("admissionDate").value=s.admissionDate||"";
+  document.getElementById("class").value=s.class||"";
+  document.getElementById("dob").value=s.dob||"";
+  document.getElementById("message").value=s.message||"";
+  if(s.photo){
+    document.getElementById("previewPhoto").src=s.photo;
+    document.getElementById("previewPhoto").style.display="block";
+  }
+}
+
+window.deleteStudent = async function(id){
+  if(confirm("Delete Student?")){
+    await deleteDoc(doc(db,"admissions",id));
+    loadStudents();
+  }
+}
+
+loadStudents();
+</script>
+
+</body>
+  </html>
