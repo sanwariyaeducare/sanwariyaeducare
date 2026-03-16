@@ -1,365 +1,464 @@
 <!DOCTYPE html>
 <html>
 <head>
-
 <meta charset="UTF-8">
-<title>Student Admission Form</title>
+<title>Print Result</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <style>
 
-body{
-font-family:Arial;
-background:#eee;
+@import url('https://fonts.googleapis.com/css2?family=Pacifico&display=swap');
+
+body{font-family:Arial;margin:0;background:#f2f4f8;}
+header{display:none;}
+.container{max-width:1200px;margin:auto;padding:20px;}
+
+.card{
+background:white;
 padding:20px;
-}
-
-.controls{
-text-align:center;
+border-radius:10px;
 margin-bottom:20px;
+box-shadow:0 2px 6px rgba(0,0,0,0.1);
 }
 
-button,select{
-padding:10px;
-margin:5px;
-cursor:pointer;
-}
+select,button{padding:10px;margin:5px;}
+button{background:#004aad;color:white;border:none;border-radius:5px;cursor:pointer;}
 
-.form{
+/* MARKSHEET */
+
+.marksheet{
 width:210mm;
-min-height:297mm;
+min-height:290mm;
 background:white;
 margin:auto;
-padding:25px;
+padding:20px;
 border:4px solid #004aad;
 position:relative;
+box-sizing:border-box;
+page-break-after:avoid;
 }
 
-.header{
-text-align:center;
+/* HEADER */
+
+.school-header{
+display:flex;
+justify-content:space-between;
+align-items:center;
 border-bottom:2px solid #000;
-padding-bottom:10px;
-margin-bottom:20px;
+padding-bottom:8px;
+margin-bottom:5px;
 }
 
-.school{
-font-size:24px;
+.school-header img{width:45px;}
+
+.school-name{
+flex:1;
+text-align:center;
+font-size:26px;
 font-weight:bold;
+color:#004aad;
 }
 
-.logo{
-position:absolute;
-left:25px;
-top:25px;
+.report-title{
+text-align:center;
+font-family:'Pacifico',cursive;
+font-size:28px;
+margin-top:5px;
+margin-bottom:5px;
 }
 
-.logo img{
-width:80px;
+.school-info{
+text-align:center;
+font-size:13px;
+margin-bottom:5px;
 }
 
-.photo{
-position:absolute;
-right:40px;
-top:120px;
+.student{
+display:flex;
+justify-content:space-between;
+margin-top:10px;
 }
 
-.photo img{
-width:110px;
-height:130px;
+.student-details{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:6px 20px;
+font-size:13px;
+}
+
+.student img{
+width:75px;
+height:95px;
 object-fit:cover;
-border:2px solid #000;
-}
-
-.qr{
-position:absolute;
-right:40px;
-bottom:120px;
+border:1px solid #ccc;
 }
 
 table{
 width:100%;
 border-collapse:collapse;
+margin-top:8px;
 }
 
-table td{
-border:1px solid #000;
-padding:8px;
+th,td{
+border:1px solid #ccc;
+padding:5px;
+text-align:center;
+font-size:12px;
 }
 
-.label{
-width:30%;
+th{
+background:#004aad;
+color:white;
+}
+
+.table-title{
+text-align:center;
 font-weight:bold;
+margin-top:8px;
 }
 
-.design1{border-color:#004aad;}
-.design1 .header{color:#004aad;}
+.watermark-logo{
+position:absolute;
+top:50%;
+left:50%;
+transform:translate(-50%,-50%);
+opacity:0.05;
+width:200px;
+}
 
-.design2{border-color:#2e7d32;}
-.design2 .header{color:#2e7d32;}
+.watermark-text{
+position:absolute;
+top:40%;
+left:20%;
+font-size:60px;
+opacity:0.05;
+transform:rotate(-30deg);
+}
 
-.design3{border-color:#8e0038;}
-.design3 .header{color:#8e0038;}
-
-.signature{
-margin-top:50px;
+.signature-section{
+margin-top:20px;
 display:flex;
 justify-content:space-between;
 }
 
-.signature img{
-width:120px;
+.signature-box{text-align:center;}
+
+.signature-box .line{
+border-top:1px solid #000;
+width:150px;
+margin:auto;
+margin-top:30px;
+}
+
+.grade-system{
+margin-top:10px;
+}
+
+.grade-system th,.grade-system td{
+border:1px solid #004aad;
+padding:4px;
+font-size:11px;
+}
+
+.pass{color:green;font-weight:bold;}
+.fail{color:red;font-weight:bold;}
+
+.cbse{border-color:#004aad;} .cbse th{background:#004aad;}
+.icse{border-color:#ff5733;} .icse th{background:#ff5733;}
+.state{border-color:#28a745;} .state th{background:#28a745;}
+.pro1{border-color:#6f42c1;} .pro1 th{background:#6f42c1;}
+.pro2{border-color:#fd7e14;} .pro2 th{background:#fd7e14;}
+.pro3{border-color:#17a2b8;} .pro3 th{background:#17a2b8;}
+.pro4{border-color:#e83e8c;} .pro4 th{background:#e83e8c;}
+
+@page{
+size:A4;
+margin:10mm;
 }
 
 @media print{
-
-.controls{
-display:none;
-}
-
-body{
-background:white;
-}
-
+.card{display:none;}
+body{background:white;padding:0;}
+table,th,td{border:1px solid #000 !important;}
 }
 
 </style>
-
 </head>
 
 <body>
 
-<div class="controls">
+<div class="container">
 
-<select id="designSelect">
-<option value="design1">Blue Design</option>
-<option value="design2">Green Design</option>
-<option value="design3">Maroon Design</option>
+<div class="card">
+
+<select id="sessionSelect"></select>
+
+<select id="classSelect">
+<option value="">Select Class</option>
+<option>Nursery</option><option>LKG</option><option>UKG</option>
+<option>1</option><option>2</option><option>3</option><option>4</option>
+<option>5</option><option>6</option><option>7</option><option>8</option>
+<option>9</option><option>10</option><option>11</option><option>12</option>
 </select>
 
+<select id="styleSelect">
+<option value="cbse">CBSE Pattern</option>
+<option value="icse">ICSE Pattern</option>
+<option value="state">State Board</option>
+<option value="pro1">Professional 1</option>
+<option value="pro2">Professional 2</option>
+<option value="pro3">Professional 3</option>
+<option value="pro4">Professional 4</option>
+</select>
+
+<select id="watermark">
+<option value="off">Watermark OFF</option>
+<option value="logo">Logo Watermark</option>
+<option value="name">School Name Watermark</option>
+</select>
+
+<br>
+
+<button onclick="generateResults()">Generate Result</button>
 <button onclick="window.print()">Print</button>
-<button onclick="downloadPDF()">Download PDF</button>
+<button onclick="downloadPDF()">PDF</button>
 
 </div>
 
-<div class="form design1" id="form">
-
-<div class="logo">
-<img src="school-logo.png">
-</div>
-
-<div class="header">
-
-<div class="school">YOUR SCHOOL NAME</div>
-
-Address : Your School Address <br>
-Mobile : 9999999999 <br>
-
-<h2>Student Admission Form</h2>
-
-Student ID : <span id="studentID"></span>
+<div id="resultArea"></div>
 
 </div>
-
-<div class="photo">
-<img id="photo">
-</div>
-
-<div class="qr">
-<canvas id="qr"></canvas>
-</div>
-
-<table>
-
-<tr>
-<td class="label">Student Name</td>
-<td id="name"></td>
-</tr>
-
-<tr>
-<td class="label">Father Name</td>
-<td id="father"></td>
-</tr>
-
-<tr>
-<td class="label">Mobile</td>
-<td id="mobile"></td>
-</tr>
-
-<tr>
-<td class="label">Class</td>
-<td id="class"></td>
-</tr>
-
-<tr>
-<td class="label">Date of Birth</td>
-<td id="dob"></td>
-</tr>
-
-<tr>
-<td class="label">Admission Date</td>
-<td id="admissionDate"></td>
-</tr>
-
-<tr>
-<td class="label">Village</td>
-<td id="village"></td>
-</tr>
-
-<tr>
-<td class="label">City</td>
-<td id="city"></td>
-</tr>
-
-<tr>
-<td class="label">Post</td>
-<td id="post"></td>
-</tr>
-
-<tr>
-<td class="label">District</td>
-<td id="district"></td>
-</tr>
-
-<tr>
-<td class="label">State</td>
-<td id="state"></td>
-</tr>
-
-<tr>
-<td class="label">Aadhar</td>
-<td id="adhar"></td>
-</tr>
-
-<tr>
-<td class="label">APAR ID</td>
-<td id="apar"></td>
-</tr>
-
-<tr>
-<td class="label">SSSM ID</td>
-<td id="sssm"></td>
-</tr>
-
-<tr>
-<td class="label">Family ID</td>
-<td id="family"></td>
-</tr>
-
-<tr>
-<td class="label">Roll Number</td>
-<td id="roll"></td>
-</tr>
-
-<tr>
-<td class="label">Scholar Number</td>
-<td id="scholer"></td>
-</tr>
-
-<tr>
-<td class="label">Caste</td>
-<td id="caste"></td>
-</tr>
-
-<tr>
-<td class="label">Category</td>
-<td id="category"></td>
-</tr>
-
-</table>
-
-<div class="signature">
-
-<div>
-Parent Signature
-</div>
-
-<div>
-<img src="principal-sign.png"><br>
-Principal Signature
-</div>
-
-</div>
-
-</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.3/qrcode.min.js"></script>
 
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore,doc,getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore,collection,getDocs,doc,getDoc,query,where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig={
 apiKey:"AIzaSyBj8_SjhJ9QtXu-4DigToqjBos5waZEXYw",
 authDomain:"nmpsnagguradiya-b9b94.firebaseapp.com",
-projectId:"nmpsnagguradiya-b9b94",
-storageBucket:"nmpsnagguradiya-b9b94.firebasestorage.app",
-messagingSenderId:"811957568318",
-appId:"1:811957568318:web:7058de9ba52df9d6bae26f"
+projectId:"nmpsnagguradiya-b9b94"
 };
 
 const app=initializeApp(firebaseConfig);
 const db=getFirestore(app);
 
-const params=new URLSearchParams(window.location.search);
-const id=params.get("id");
+const schoolId=localStorage.getItem("schoolId")||"school_001";
+let schoolData={};
 
-async function loadStudent(){
-
-const ref=doc(db,"admissions",id);
-const snap=await getDoc(ref);
-
+async function loadSchool(){
+const snap=await getDoc(doc(db,"schools",schoolId));
 if(snap.exists()){
+schoolData=snap.data();
+const sessions=schoolData.sessions||[];
+sessionSelect.innerHTML='<option value="">Select Session</option>'+sessions.map(s=>`<option>${s}</option>`).join("");
+}
+}
+loadSchool();
 
-let s=snap.data();
-
-let studentID="STU-"+id.substring(0,6).toUpperCase();
-document.getElementById("studentID").innerText=studentID;
-
-document.getElementById("name").innerText=s.name||"";
-document.getElementById("father").innerText=s.father||"";
-document.getElementById("mobile").innerText=s.mobile||"";
-document.getElementById("class").innerText=s.class||"";
-document.getElementById("dob").innerText=s.dob||"";
-document.getElementById("admissionDate").innerText=s.admissionDate||"";
-document.getElementById("village").innerText=s.village||"";
-document.getElementById("city").innerText=s.city||"";
-document.getElementById("post").innerText=s.post||"";
-document.getElementById("district").innerText=s.district||"";
-document.getElementById("state").innerText=s.state||"";
-document.getElementById("adhar").innerText=s.adhar||"";
-document.getElementById("apar").innerText=s.apar||"";
-document.getElementById("sssm").innerText=s.sssm||"";
-document.getElementById("family").innerText=s.family||"";
-document.getElementById("roll").innerText=s.roll||"";
-document.getElementById("scholer").innerText=s.scholer||"";
-document.getElementById("caste").innerText=s.caste||"";
-document.getElementById("category").innerText=s.category||"";
-
-document.getElementById("photo").src=s.photo||"";
-
-QRCode.toCanvas(document.getElementById("qr"),window.location.href);
-
+function grade(p){
+if(p>=90)return"A+";
+if(p>=75)return"A";
+if(p>=60)return"B";
+if(p>=45)return"C";
+if(p>=33)return"D";
+return"F";
 }
 
+window.generateResults=async function(){
+
+const session=sessionSelect.value;
+const cls=classSelect.value;
+const style=styleSelect.value;
+
+if(!session||!cls){alert("Select Session and Class");return;}
+
+const studentSnap=await getDocs(query(collection(db,"admissions"),where("schoolId","==",schoolId),where("session","==",session),where("class","==",cls)));
+const examSnap=await getDocs(query(collection(db,"exam_sessions"),where("schoolId","==",schoolId),where("session","==",session)));
+const subjectSnap=await getDocs(query(collection(db,"subjects"),where("schoolId","==",schoolId),where("session","==",session)));
+
+let exams=[];examSnap.forEach(e=>exams.push({id:e.id,name:e.data().examName,max:e.data().max||100}));
+let subjects=[];subjectSnap.forEach(s=>subjects.push({id:s.id,name:s.data().name}));
+
+let html="";
+
+for(const st of studentSnap.docs){
+
+const student=st.data();
+
+let marksSnap=await getDocs(query(collection(db,"marks"),where("studentId","==",st.id),where("session","==",session)));
+let marks={};
+marksSnap.forEach(m=>{
+const d=m.data();
+marks[d.examId+"_"+d.subjectId]=d.marks;
+});
+
+let attSnap=await getDoc(doc(db,"attendance",`${st.id}_${session}`));
+let work=0,present=0,absent=0,sports="",activity="";
+if(attSnap.exists()){
+const d=attSnap.data();
+work=d.workingDays||0;
+present=d.present||0;
+absent=d.absent||0;
+sports=d.sports||"";
+activity=d.activity||"";
 }
 
-function downloadPDF(){
+let head="<tr><th>Subject</th>";
+exams.forEach(e=>{head+=`<th>${e.name}<br>(${e.max})</th>`;});
+head+="<th>Total</th><th>%</th><th>Grade</th><th>Result</th></tr>";
 
-window.print();
+let rows="";
 
-}
+subjects.forEach(sub=>{
 
-document.getElementById("designSelect").addEventListener("change",function(){
+let total=0;
+let maxTotal=0;
 
-let form=document.getElementById("form");
+let row=`<tr><td>${sub.name}</td>`;
 
-form.classList.remove("design1","design2","design3");
+exams.forEach(ex=>{
+let m=marks[ex.id+"_"+sub.id]||0;
+row+=`<td>${m}</td>`;
+total+=Number(m);
+maxTotal+=Number(ex.max);
+});
 
-form.classList.add(this.value);
+const percent=((total/maxTotal)*100).toFixed(1);
+const g=grade(percent);
+const pass=percent>=33;
+
+row+=`<td>${total}</td>
+<td>${percent}</td>
+<td>${g}</td>
+<td class="${pass?'pass':'fail'}">${pass?'PASS':'FAIL'}</td></tr>`;
+
+rows+=row;
 
 });
 
-loadStudent();
+let gradeTable=`
+
+<table class="grade-system">
+
+<tr><th>Percentage</th><th>Grade</th></tr>
+<tr><td>90-100</td><td>A+</td></tr>
+<tr><td>75-89</td><td>A</td></tr>
+<tr><td>60-74</td><td>B</td></tr>
+<tr><td>45-59</td><td>C</td></tr>
+<tr><td>33-44</td><td>D</td></tr>
+<tr><td>0-32</td><td>F</td></tr>
+
+</table>
+
+`;
+
+html+=`
+
+<div class="marksheet ${style}">
+
+<div class="school-header">
+<img src="${schoolData.logo}">
+<div class="school-name">${schoolData.name}</div>
+<img src="${schoolData.logo}">
+</div>
+
+<div class="report-title">Report Card</div>
+
+<div class="school-info">
+Address: ${schoolData.address||""} |
+DISE Code: ${schoolData.dise||""} |
+Session: ${session}
+</div>
+
+<div class="student">
+
+<div class="student-details">
+
+<div><b>Name:</b> ${student.name}</div>
+<div><b>Father:</b> ${student.father}</div>
+<div><b>Mother:</b> ${student.mother||""}</div>
+<div><b>Class:</b> ${student.class}</div>
+<div><b>Roll:</b> ${student.roll}</div>
+<div><b>DOB:</b> ${student.dob||""}</div>
+
+</div>
+
+<img src="${student.photo||""}">
+
+</div>
+
+<div class="table-title">Academic Record</div>
+
+<table>
+
+${head}
+
+${rows}
+
+</table>
+
+<table>
+
+<tr>
+<th>Sports</th>
+<th>Activity</th>
+<th>Total Working Days</th>
+<th>Present</th>
+<th>Absent</th>
+</tr>
+
+<tr>
+<td>${sports}</td>
+<td>${activity}</td>
+<td>${work}</td>
+<td>${present}</td>
+<td>${absent}</td>
+</tr>
+
+</table>
+
+${gradeTable}
+
+<div class="signature-section">
+
+<div class="signature-box">
+Class Teacher
+<div class="line"></div>
+</div>
+
+<div class="signature-box">
+Principal
+<div class="line"></div>
+</div>
+
+</div>
+
+</div>
+
+`;
+
+}
+
+document.getElementById("resultArea").innerHTML=html;
+
+}
+
+window.downloadPDF=function(){
+
+html2pdf(
+document.getElementById("resultArea"),
+{
+margin:5,
+filename:"result.pdf",
+html2canvas:{scale:2,useCORS:true},
+jsPDF:{unit:"mm",format:"a4"}
+}
+);
+
+}
 
 </script>
 
