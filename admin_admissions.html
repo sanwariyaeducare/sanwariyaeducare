@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Admin Admissions Panel</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<style>
+body{font-family:Arial;margin:0;background:#f2f2f2;}
+header{background:#004aad;color:white;padding:16px;text-align:center;font-size:22px;}
+.container{padding:20px;max-width:1200px;margin:auto;}
+
+.big-buttons{display:flex;gap:15px;flex-wrap:wrap;margin-bottom:20px;}
+.big-btn{flex:1;min-width:180px;background:#004aad;color:white;padding:20px;border-radius:10px;display:flex;align-items:center;gap:15px;font-size:18px;font-weight:bold;cursor:pointer;box-shadow:0 0 8px rgba(0,0,0,0.2);}
+.big-btn i{font-size:26px;}
+
+.dashboard{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:20px;}
+.box{background:white;padding:15px;border-radius:8px;flex:1;text-align:center;box-shadow:0 0 5px rgba(0,0,0,0.2);}
+
+.controls{margin-bottom:15px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
+.controls input, .controls select, .controls button{padding:10px;border-radius:5px;border:1px solid #ccc;}
+.controls button.export{background:#28a745;color:white;border:none;cursor:pointer;}
+
+table{width:100%;background:white;border-collapse:collapse;}
+th,td{padding:8px;border:1px solid #ddd;text-align:center;}
+img{width:50px;border-radius:5px;}
+
+.button-small{padding:6px 10px;border:none;border-radius:5px;cursor:pointer;margin:2px;}
+.edit{background:#ffc107;color:black;}
+.photo{background:#6f42c1;color:white;}
+.delete{background:red;color:white;}
+.print{background:#17a2b8;color:white;}
+
+.promote{background:#0066cc;color:white;padding:6px 10px;border:none;border-radius:5px;cursor:pointer;}
+</style>
+</head>
+
+<body>
+
+<header>Admission Admin Panel</header>
+
+<div class="container">
+
+<div class="big-buttons">
+<div class="big-btn" onclick="window.location.href='admission.html'"><i class="fa fa-user-plus"></i> Add New Student</div>
+<div class="big-btn" onclick="window.location.href='all-students.html'"><i class="fa fa-users"></i> All Students</div>
+<div class="big-btn" onclick="window.location.href='print-result.html'"><i class="fa fa-print"></i> Print Result</div>
+<div class="big-btn" onclick="window.location.href='print-id.html'"><i class="fa fa-id-card"></i> Print ID</div>
+</div>
+
+<div class="dashboard">
+<div class="box">Total Admissions<h2 id="total">0</h2></div>
+</div>
+
+<div class="controls">
+<input type="text" id="search" placeholder="Search Name / Mobile">
+<select id="classFilter">
+<option value="all">All Classes</option>
+<option>Nursery</option>
+<option>LKG</option>
+<option>UKG</option>
+<option>1</option>
+<option>2</option>
+<option>3</option>
+<option>4</option>
+<option>5</option>
+<option>6</option>
+<option>7</option>
+<option>8</option>
+<option>9</option>
+<option>10</option>
+<option>11</option>
+<option>12</option>
+</select>
+<button class="export" onclick="exportAll()">Export All</button>
+</div>
+
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Father</th>
+<th>Mobile</th>
+<th>Village</th>
+<th>Class</th>
+<th>Photo</th>
+<th>Promote</th>
+</tr>
+</thead>
+<tbody id="list"></tbody>
+</table>
+
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig={
+apiKey:"AIzaSyBj8_SjhJ9QtXu-4DigToqjBos5waZEXYw",
+authDomain:"nmpsnagguradiya-b9b94.firebaseapp.com",
+projectId:"nmpsnagguradiya-b9b94"
+};
+
+const app=initializeApp(firebaseConfig);
+const db=getFirestore(app);
+
+const schoolId=localStorage.getItem("schoolId")||"school_001";
+const activeSession=localStorage.getItem("activeSession")||"2025-26";
+
+let admissions=[];
+
+const classOrder=["Nursery","LKG","UKG","1","2","3","4","5","6","7","8","9","10","11","12"];
+
+loadAdmissions();
+
+async function loadAdmissions(){
+admissions=[];
+const snapshot=await getDocs(collection(db,"admissions"));
+snapshot.forEach(docSnap=>{
+const data=docSnap.data();
+if(data.schoolId!==schoolId) return;
+if(data.session!==activeSession) return;
+data.id=docSnap.id;
+admissions.push(data);
+});
+renderTable();
+document.getElementById("total").innerText=admissions.length;
+}
+
+function renderTable(){
+const search=document.getElementById("search").value.toLowerCase();
+const classFilter=document.getElementById("classFilter").value;
+const table=document.getElementById("list");
+table.innerHTML="";
+admissions.forEach(data=>{
+if(search && !data.name.toLowerCase().includes(search) && !data.mobile.includes(search)) return;
+if(classFilter!="all" && data.class!=classFilter) return;
+let nextClassIndex=classOrder.indexOf(data.class)+1;
+let nextClass=nextClassIndex<classOrder.length?classOrder[nextClassIndex]:data.class;
+table.innerHTML+=`
+<tr>
+<td>${data.name}</td>
+<td>${data.father}</td>
+<td>${data.mobile}</td>
+<td>${data.village}</td>
+<td>${data.class}</td>
+<td><img src="${data.photo||""}"></td>
+<td><button class="promote" onclick="promoteStudent('${data.id}','${nextClass}')">Promote to ${nextClass}</button></td>
+</tr>
+`;
+});
+}
+
+/* Promote Student */
+window.promoteStudent=async function(id,nextClass){
+if(!confirm("Promote this student to next class?")) return;
+await updateDoc(doc(db,"admissions",id),{class:nextClass});
+loadAdmissions();
+}
+
+/* EXPORT */
+window.exportAll=function(){
+const ws=XLSX.utils.json_to_sheet(admissions);
+const wb=XLSX.utils.book_new();
+XLSX.utils.book_append_sheet(wb,ws,"Students");
+XLSX.writeFile(wb,"all_students.xlsx");
+}
+
+document.getElementById("search").addEventListener("keyup",renderTable);
+document.getElementById("classFilter").addEventListener("change",renderTable);
+</script>
+
+</body>
+</html>
