@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Print Admit Card</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body{font-family:Arial;margin:0;background:#f2f4f8;}
+.container{max-width:1200px;margin:auto;padding:20px;}
+.card{padding:20px;}
+select,textarea,button{padding:10px;margin:5px;}
+button{background:#004aad;color:white;border:none;border-radius:5px;cursor:pointer;}
+textarea{width:100%;max-width:400px;}
+
+.admit-page{
+width:210mm;
+min-height:297mm;
+margin:auto;
+padding:5mm;
+page-break-after:always;
+display:grid;
+gap:5mm;
+}
+
+.admit-card{
+border:2px solid #004aad;
+padding:10px;
+display:flex;
+flex-direction:column;
+font-size:14px;
+justify-content:space-between;
+}
+
+.school-header{
+display:flex;
+align-items:center;
+justify-content:space-between;
+border-bottom:3px solid #004aad;
+padding-bottom:5px;
+}
+
+.school-header img{width:40px;height:40px;}
+
+.school-name{
+flex:1;
+text-align:center;
+font-size:20px;
+font-weight:bold;
+color:#004aad;
+}
+
+.school-info{
+text-align:center;
+font-size:12px;
+margin-top:2px;
+}
+
+.student-box{
+margin-top:10px;
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+.student-details{line-height:1.5;}
+
+.student-photo{
+width:70px;
+height:80px;
+border:1px solid #000;
+object-fit:cover;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:10px;
+}
+
+th,td{
+border:1px solid #000;
+padding:4px;
+text-align:center;
+font-size:12px;
+}
+
+/* 7 styles */
+
+.style1 th{background:#004aad;color:white;}
+.style2 th{background:#2e7d32;color:white;}
+.style3 th{background:#6a1b9a;color:white;}
+.style4 th{background:#c62828;color:white;}
+.style5 th{background:#ef6c00;color:white;}
+.style6 th{background:#00838f;color:white;}
+.style7 th{background:#37474f;color:white;}
+
+.guidelines{margin-top:5px;font-size:12px;}
+
+.signature{
+display:flex;
+justify-content:space-between;
+margin-top:20px;
+}
+
+.sign-box{text-align:center;}
+
+.sign-line{
+border-top:1px solid black;
+width:100px;
+margin:auto;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="card">
+
+<h3>Select Session / Class / Exam</h3>
+
+<select id="sessionSelect"></select>
+
+<select id="classSelect">
+<option value="">Select Class</option>
+<option>Nursery</option>
+<option>LKG</option>
+<option>UKG</option>
+<option>1</option>
+<option>2</option>
+<option>3</option>
+<option>4</option>
+<option>5</option>
+<option>6</option>
+<option>7</option>
+<option>8</option>
+<option>9</option>
+<option>10</option>
+<option>11</option>
+<option>12</option>
+</select>
+
+<select id="examSelect"></select>
+
+<textarea id="durationText" rows="2" placeholder="Enter Exam Duration (Example: 3 Hours)"></textarea>
+
+<textarea id="guidelines" rows="3" placeholder="Enter Exam Guidelines"></textarea>
+
+<select id="cardsPerPage">
+<option value="2">2 Admit Card per Page</option>
+<option value="4">4 Admit Card per Page</option>
+</select>
+
+<select id="styleSelect">
+<option value="style1">Style 1</option>
+<option value="style2">Style 2</option>
+<option value="style3">Style 3</option>
+<option value="style4">Style 4</option>
+<option value="style5">Style 5</option>
+<option value="style6">Style 6</option>
+<option value="style7">Style 7</option>
+</select>
+
+<br>
+
+<button onclick="generateAdmit()">Generate Admit Card</button>
+<button onclick="window.print()">Print</button>
+
+</div>
+
+<div id="admitArea"></div>
+
+</div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import {
+getFirestore,
+collection,
+getDocs,
+doc,
+query,
+where,
+getDoc
+}
+
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig={
+apiKey:"AIzaSyBj8_SjhJ9QtXu-4DigToqjBos5waZEXYw",
+authDomain:"nmpsnagguradiya-b9b94.firebaseapp.com",
+projectId:"nmpsnagguradiya-b9b94"
+};
+
+const app=initializeApp(firebaseConfig);
+const db=getFirestore(app);
+
+const schoolId=localStorage.getItem("schoolId")||"school_001";
+
+let schoolData={};
+
+async function loadSchool(){
+
+const snap=await getDoc(doc(db,"schools",schoolId));
+
+if(snap.exists()){
+
+schoolData=snap.data();
+
+sessionSelect.innerHTML='<option value="">Select Session</option>'+
+
+(schoolData.sessions||[]).map(s=>`<option value="${s}">${s}</option>`).join("");
+
+}
+
+}
+
+loadSchool();
+
+sessionSelect.addEventListener("change",async()=>{
+
+const session=sessionSelect.value;
+
+if(!session) return;
+
+const examSnap = await getDocs(
+
+query(
+
+collection(db,"exam_sessions"),
+
+where("schoolId","==",schoolId),
+
+where("session","==",session)
+
+)
+
+);
+
+examSelect.innerHTML='<option value="">Select Exam</option>'+
+
+examSnap.docs.map(d=>`<option value="${d.id}">${d.data().examName}</option>`).join("");
+
+});
+
+window.generateAdmit=async function(){
+
+const session=sessionSelect.value;
+
+const cls=classSelect.value;
+
+const examId=examSelect.value;
+
+const guide=guidelines.value;
+
+const durationText=document.getElementById("durationText").value;
+
+const style=document.getElementById("styleSelect").value;
+
+const perPage=parseInt(cardsPerPage.value);
+
+if(!session||!cls||!examId) return alert("Select session, class, exam");
+
+const studentSnap=await getDocs(
+
+query(
+
+collection(db,"admissions"),
+
+where("schoolId","==",schoolId),
+
+where("session","==",session),
+
+where("class","==",cls)
+
+)
+
+);
+
+const students=studentSnap.docs.map(d=>({id:d.id,...d.data()}));
+
+const ttSnap=await getDocs(
+
+query(
+
+collection(db,"timetable"),
+
+where("examId","==",examId)
+
+)
+
+);
+
+const timetable=[];
+
+for(const d of ttSnap.docs){
+
+const tData=d.data();
+
+const subDoc = await getDoc(doc(db,"subjects",tData.subjectId));
+
+timetable.push({
+
+...tData,
+
+subjectName:subDoc.exists()?subDoc.data().name:""
+
+});
+
+}
+
+let html="";
+
+for(let i=0;i<students.length;i+=perPage){
+
+html+='<div class="admit-page" style="grid-template-columns:repeat(2,1fr);">';
+
+const slice=students.slice(i,i+perPage);
+
+slice.forEach(student=>{
+
+let rows="";
+
+timetable.forEach(t=>{
+
+if(t.class!==student.class) return;
+
+rows+=`<tr>
+
+<td>${t.subjectName}</td>
+
+<td>${t.date}</td>
+
+<td>${t.day}</td>
+
+<td>${t.time}</td>
+
+<td>${durationText}</td>
+
+</tr>`;
+
+});
+
+html+=`
+
+<div class="admit-card ${style}">
+
+<div class="school-header">
+
+<img src="${schoolData.logo}">
+
+<div class="school-name">${schoolData.name}</div>
+
+<img src="${schoolData.logo}">
+
+</div>
+
+<div class="school-info">
+
+${schoolData.address} | DISE: ${schoolData.dise} | Session: ${session}
+
+</div>
+
+<h2 style="text-align:center;margin-top:5px;">ADMIT CARD</h2>
+
+<div class="student-box">
+
+<div class="student-details">
+
+Name: ${student.name}<br>
+
+Father: ${student.father}<br>
+
+Class: ${student.class}<br>
+
+Roll: ${student.roll}
+
+</div>
+
+<img class="student-photo" src="${student.photo||''}">
+
+</div>
+
+<table>
+
+<tr>
+
+<th>Subject</th>
+
+<th>Date</th>
+
+<th>Day</th>
+
+<th>Time</th>
+
+<th>Duration</th>
+
+</tr>
+
+${rows}
+
+</table>
+
+<div class="guidelines">
+
+<b>Exam Guidelines:</b><br>${guide}
+
+</div>
+
+<div class="signature">
+
+<div class="sign-box">
+
+Principal
+
+<div class="sign-line"></div>
+
+</div>
+
+<div class="sign-box">
+
+Director
+
+<div class="sign-line"></div>
+
+</div>
+
+</div>
+
+</div>
+
+`;
+
+});
+
+html+='</div>';
+
+}
+
+document.getElementById("admitArea").innerHTML=html;
+
+}
+
+</script>
+
+</body>
+  </html>
