@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta charset="UTF-8">
+<title>Student Admission Form</title>
+
+<style>
+
+body{
+font-family:Arial;
+background:#eee;
+padding:20px;
+}
+
+.controls{
+text-align:center;
+margin-bottom:20px;
+}
+
+button,select{
+padding:10px;
+margin:5px;
+cursor:pointer;
+}
+
+.form{
+width:210mm;
+min-height:297mm;
+background:white;
+margin:auto;
+padding:25px;
+border:4px solid #004aad;
+position:relative;
+}
+
+.header{
+text-align:center;
+border-bottom:2px solid #000;
+padding-bottom:10px;
+margin-bottom:20px;
+}
+
+.school{
+font-size:24px;
+font-weight:bold;
+}
+
+.logo{
+position:absolute;
+left:25px;
+top:25px;
+}
+
+.logo img{
+width:80px;
+}
+
+.photo{
+position:absolute;
+right:40px;
+top:120px;
+}
+
+.photo img{
+width:110px;
+height:130px;
+object-fit:cover;
+border:2px solid #000;
+}
+
+.qr{
+position:absolute;
+right:40px;
+bottom:120px;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+}
+
+table td{
+border:1px solid #000;
+padding:8px;
+}
+
+.label{
+width:30%;
+font-weight:bold;
+}
+
+.design1{border-color:#004aad;}
+.design1 .header{color:#004aad;}
+
+.design2{border-color:#2e7d32;}
+.design2 .header{color:#2e7d32;}
+
+.design3{border-color:#8e0038;}
+.design3 .header{color:#8e0038;}
+
+.signature{
+margin-top:50px;
+display:flex;
+justify-content:space-between;
+}
+
+.signature img{
+width:120px;
+}
+
+@media print{
+
+.controls{
+display:none;
+}
+
+body{
+background:white;
+}
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="controls">
+
+<select id="designSelect">
+<option value="design1">Blue Design</option>
+<option value="design2">Green Design</option>
+<option value="design3">Maroon Design</option>
+</select>
+
+<button onclick="window.print()">Print</button>
+<button onclick="downloadPDF()">Download PDF</button>
+
+</div>
+
+<div class="form design1" id="form">
+
+<div class="logo">
+<img src="school-logo.png">
+</div>
+
+<div class="header">
+
+<div class="school">YOUR SCHOOL NAME</div>
+
+Address : Your School Address <br>
+Mobile : 9999999999 <br>
+
+<h2>Student Admission Form</h2>
+
+Student ID : <span id="studentID"></span>
+
+</div>
+
+<div class="photo">
+<img id="photo">
+</div>
+
+<div class="qr">
+<canvas id="qr"></canvas>
+</div>
+
+<table>
+
+<tr>
+<td class="label">Student Name</td>
+<td id="name"></td>
+</tr>
+
+<tr>
+<td class="label">Father Name</td>
+<td id="father"></td>
+</tr>
+
+<tr>
+<td class="label">Mobile</td>
+<td id="mobile"></td>
+</tr>
+
+<tr>
+<td class="label">Class</td>
+<td id="class"></td>
+</tr>
+
+<tr>
+<td class="label">Date of Birth</td>
+<td id="dob"></td>
+</tr>
+
+<tr>
+<td class="label">Admission Date</td>
+<td id="admissionDate"></td>
+</tr>
+
+<tr>
+<td class="label">Village</td>
+<td id="village"></td>
+</tr>
+
+<tr>
+<td class="label">City</td>
+<td id="city"></td>
+</tr>
+
+<tr>
+<td class="label">Post</td>
+<td id="post"></td>
+</tr>
+
+<tr>
+<td class="label">District</td>
+<td id="district"></td>
+</tr>
+
+<tr>
+<td class="label">State</td>
+<td id="state"></td>
+</tr>
+
+<tr>
+<td class="label">Aadhar</td>
+<td id="adhar"></td>
+</tr>
+
+<tr>
+<td class="label">APAR ID</td>
+<td id="apar"></td>
+</tr>
+
+<tr>
+<td class="label">SSSM ID</td>
+<td id="sssm"></td>
+</tr>
+
+<tr>
+<td class="label">Family ID</td>
+<td id="family"></td>
+</tr>
+
+<tr>
+<td class="label">Roll Number</td>
+<td id="roll"></td>
+</tr>
+
+<tr>
+<td class="label">Scholar Number</td>
+<td id="scholer"></td>
+</tr>
+
+<tr>
+<td class="label">Caste</td>
+<td id="caste"></td>
+</tr>
+
+<tr>
+<td class="label">Category</td>
+<td id="category"></td>
+</tr>
+
+</table>
+
+<div class="signature">
+
+<div>
+Parent Signature
+</div>
+
+<div>
+<img src="principal-sign.png"><br>
+Principal Signature
+</div>
+
+</div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.3/qrcode.min.js"></script>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore,doc,getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig={
+apiKey:"AIzaSyBj8_SjhJ9QtXu-4DigToqjBos5waZEXYw",
+authDomain:"nmpsnagguradiya-b9b94.firebaseapp.com",
+projectId:"nmpsnagguradiya-b9b94",
+storageBucket:"nmpsnagguradiya-b9b94.firebasestorage.app",
+messagingSenderId:"811957568318",
+appId:"1:811957568318:web:7058de9ba52df9d6bae26f"
+};
+
+const app=initializeApp(firebaseConfig);
+const db=getFirestore(app);
+
+const params=new URLSearchParams(window.location.search);
+const id=params.get("id");
+
+async function loadStudent(){
+
+const ref=doc(db,"admissions",id);
+const snap=await getDoc(ref);
+
+if(snap.exists()){
+
+let s=snap.data();
+
+let studentID="STU-"+id.substring(0,6).toUpperCase();
+document.getElementById("studentID").innerText=studentID;
+
+document.getElementById("name").innerText=s.name||"";
+document.getElementById("father").innerText=s.father||"";
+document.getElementById("mobile").innerText=s.mobile||"";
+document.getElementById("class").innerText=s.class||"";
+document.getElementById("dob").innerText=s.dob||"";
+document.getElementById("admissionDate").innerText=s.admissionDate||"";
+document.getElementById("village").innerText=s.village||"";
+document.getElementById("city").innerText=s.city||"";
+document.getElementById("post").innerText=s.post||"";
+document.getElementById("district").innerText=s.district||"";
+document.getElementById("state").innerText=s.state||"";
+document.getElementById("adhar").innerText=s.adhar||"";
+document.getElementById("apar").innerText=s.apar||"";
+document.getElementById("sssm").innerText=s.sssm||"";
+document.getElementById("family").innerText=s.family||"";
+document.getElementById("roll").innerText=s.roll||"";
+document.getElementById("scholer").innerText=s.scholer||"";
+document.getElementById("caste").innerText=s.caste||"";
+document.getElementById("category").innerText=s.category||"";
+
+document.getElementById("photo").src=s.photo||"";
+
+QRCode.toCanvas(document.getElementById("qr"),window.location.href);
+
+}
+
+}
+
+function downloadPDF(){
+
+window.print();
+
+}
+
+document.getElementById("designSelect").addEventListener("change",function(){
+
+let form=document.getElementById("form");
+
+form.classList.remove("design1","design2","design3");
+
+form.classList.add(this.value);
+
+});
+
+loadStudent();
+
+</script>
+
+</body>
+</html>
