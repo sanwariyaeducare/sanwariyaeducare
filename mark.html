@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Marks + Attendance System</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body{font-family:Arial;margin:0;background:#f2f4f8;}
+header{background:#004aad;color:white;padding:15px;text-align:center;font-size:22px;font-weight:bold;}
+.container{padding:20px;max-width:1200px;margin:auto;}
+.card{background:white;padding:20px;border-radius:10px;margin-bottom:20px;box-shadow:0 3px 8px rgba(0,0,0,0.1);}
+.tabs{display:flex;gap:10px;margin-bottom:15px;}
+.tab{padding:10px 15px;background:#ddd;cursor:pointer;border-radius:5px;}
+.tab.active{background:#004aad;color:white;}
+select,input,button{padding:10px;margin:5px;width:100%;max-width:220px;border-radius:5px;border:1px solid #ccc;}
+button{cursor:pointer;font-weight:bold;border:none;}
+.load{background:#28a745;color:white;}
+.save{background:#004aad;color:white;}
+table{width:100%;border-collapse:collapse;margin-top:10px;}
+th,td{border:1px solid #ddd;padding:8px;text-align:center;}
+th{background:#004aad;color:white;}
+input[type="number"]{width:70px;text-align:center;}
+.gradeInput{width:60px;}
+</style>
+</head>
+
+<body>
+
+<header>School Marks Management</header>
+
+<div class="container">
+
+<div class="card">
+<h3>Select Session</h3>
+<select id="sessionSelect"></select>
+<p id="sessionStatus"></p>
+</div>
+
+<div id="mainSystem" style="display:none">
+
+<div class="tabs">
+<div class="tab active" onclick="openTab('marksTab')">Marks</div>
+<div class="tab" onclick="openTab('sportsTab')">Sports / Activity</div>
+<div class="tab" onclick="openTab('attendanceTab')">Attendance</div>
+</div>
+
+<!-- Marks Tab -->
+<div id="marksTab" class="card">
+<h3>Select Details</h3>
+<select id="classSelect"><option value="">Select Class</option>
+<option>Nursery</option><option>LKG</option><option>UKG</option>
+<option>1</option><option>2</option><option>3</option><option>4</option>
+<option>5</option><option>6</option><option>7</option><option>8</option>
+<option>9</option><option>10</option></select>
+
+<select id="examSelect"></select>
+<select id="subjectSelect"></select>
+<input type="number" id="maxMarks" placeholder="Maximum Marks">
+
+<br>
+<button class="load" onclick="loadStudents()">Load Students</button>
+<button class="save" onclick="saveMarks()">Save Marks</button>
+
+<table>
+<thead>
+<tr><th>Rank</th><th>Roll</th><th>Name</th><th>Marks</th><th>%</th><th>Grade</th><th>Result</th></tr>
+</thead>
+<tbody id="marksTable"></tbody>
+</table>
+</div>
+
+<!-- Sports Tab -->
+<div id="sportsTab" class="card" style="display:none">
+<h3>Select Class</h3>
+<select id="classSports"><option value="">Select Class</option>
+<option>Nursery</option><option>LKG</option><option>UKG</option>
+<option>1</option><option>2</option><option>3</option><option>4</option>
+<option>5</option><option>6</option><option>7</option><option>8</option>
+<option>9</option><option>10</option></select>
+<button class="load" onclick="loadSports()">Load Students</button>
+<button class="save" onclick="saveSports()">Save Sports/Activity</button>
+
+<table>
+<thead>
+<tr><th>Roll</th><th>Name</th><th>Sports</th><th>Activity</th></tr>
+</thead>
+<tbody id="sportsTable"></tbody>
+</table>
+</div>
+
+<!-- Attendance Tab -->
+<div id="attendanceTab" class="card" style="display:none">
+<h3>Select Class</h3>
+<select id="classAttendance"><option value="">Select Class</option>
+<option>Nursery</option><option>LKG</option><option>UKG</option>
+<option>1</option><option>2</option><option>3</option><option>4</option>
+<option>5</option><option>6</option><option>7</option><option>8</option>
+<option>9</option><option>10</option></select>
+<button class="load" onclick="loadAttendance()">Load Students</button>
+<button class="save" onclick="saveAttendance()">Save Attendance</button>
+
+<table>
+<thead>
+<tr><th>Roll</th><th>Name</th><th>Working</th><th>Present</th><th>Absent</th></tr>
+</thead>
+<tbody id="attendanceTable"></tbody>
+</table>
+</div>
+
+</div>
+
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore,collection,getDocs,doc,getDoc,setDoc,query,where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig={
+apiKey:"AIzaSyBj8_SjhJ9QtXu-4DigToqjBos5waZEXYw",
+authDomain:"nmpsnagguradiya-b9b94.firebaseapp.com",
+projectId:"nmpsnagguradiya-b9b94"
+};
+const app=initializeApp(firebaseConfig);
+const db=getFirestore(app);
+const schoolId=localStorage.getItem("schoolId")||"school_001";
+let activeSession="",students=[];
+
+function grade(p){if(p>=90)return"A+";if(p>=75)return"A";if(p>=60)return"B";if(p>=45)return"C";if(p>=33)return"D";return"F";}
+
+window.openTab=function(id){
+marksTab.style.display="none";sportsTab.style.display="none";attendanceTab.style.display="none";
+document.getElementById(id).style.display="block";
+}
+
+/* Load Sessions */
+async function loadSessions(){
+const snap=await getDoc(doc(db,"schools",schoolId));
+const sessions=snap.data()?.sessions||[];
+sessionSelect.innerHTML='<option>Select</option>'+sessions.map(s=>`<option>${s}</option>`).join("");
+}
+loadSessions();
+
+sessionSelect.onchange=function(){
+activeSession=this.value;mainSystem.style.display="block";
+sessionStatus.innerText="Active Session: "+activeSession;
+loadExams();loadSubjects();
+}
+
+/* Load Exams & Subjects */
+async function loadExams(){
+const q=query(collection(db,"exam_sessions"),where("schoolId","==",schoolId),where("session","==",activeSession));
+const snap=await getDocs(q);
+examSelect.innerHTML='<option>Exam</option>'+snap.docs.map(d=>`<option value="${d.id}">${d.data().examName}</option>`).join("");
+}
+async function loadSubjects(){
+const q=query(collection(db,"subjects"),where("schoolId","==",schoolId),where("session","==",activeSession));
+const snap=await getDocs(q);
+subjectSelect.innerHTML='<option>Subject</option>'+snap.docs.map(d=>`<option value="${d.id}">${d.data().name}</option>`).join("");
+}
+
+/* Load Marks Students */
+window.loadStudents=async function(){
+if(!classSelect.value || !examSelect.value || !subjectSelect.value){alert("Class, Exam, Subject required");return;}
+const q=query(collection(db,"admissions"),where("class","==",classSelect.value),where("session","==",activeSession),where("schoolId","==",schoolId));
+const snap=await getDocs(q);
+students=snap.docs.map(d=>({id:d.id,...d.data()}));
+marksTable.innerHTML="";
+for(const s of students){
+let marksVal=0;
+const m=await getDoc(doc(db,"marks",`${s.id}_${examSelect.value}_${subjectSelect.value}`));
+if(m.exists()) marksVal=m.data().marks;
+marksTable.innerHTML+=`<tr>
+<td></td><td>${s.roll}</td><td>${s.name}</td>
+<td><input class="marks" value="${marksVal}"></td>
+<td class="percent"></td><td class="grade"></td><td class="result"></td>
+</tr>`;
+}
+calculateRank();
+}
+
+/* Calculate Rank */
+function calculateRank(){
+const rows=marksTable.querySelectorAll("tr");let arr=[];
+rows.forEach(r=>{
+const m=r.querySelector(".marks").value||0;const max=maxMarks.value||1;
+const percent=(m/max)*100;r.querySelector(".percent").innerText="";r.querySelector(".grade").innerText=grade(percent);
+r.querySelector(".result").innerText=percent>=33?"PASS":"FAIL";
+arr.push({row:r,marks:m});
+});
+arr.sort((a,b)=>b.marks-a.marks);
+arr.forEach((v,i)=>v.row.querySelector(".rank").innerText=i+1);
+}
+
+/* Save Marks */
+window.saveMarks=async function(){
+for(let i=0;i<students.length;i++){
+const s=students[i];const m=marksTable.rows[i].querySelector(".marks").value||0;
+await setDoc(doc(db,"marks",`${s.id}_${examSelect.value}_${subjectSelect.value}`),{
+studentId:s.id,marks:m,examId:examSelect.value,subjectId:subjectSelect.value,
+class:classSelect.value,session:activeSession,schoolId
+});
+}
+alert("Marks Saved");
+}
+
+/* Sports */
+window.loadSports=async function(){
+if(!classSports.value){alert("Select Class");return;}
+const q=query(collection(db,"admissions"),where("class","==",classSports.value),where("session","==",activeSession),where("schoolId","==",schoolId));
+const snap=await getDocs(q);students=snap.docs.map(d=>({id:d.id,...d.data()}));
+sportsTable.innerHTML="";
+for(const s of students){
+let sa=await getDoc(doc(db,"attendance",`${s.id}_${activeSession}`));
+let sport="",act="";
+if(sa.exists()){sport=sa.data().sports||"";act=sa.data().activity||"";}
+sportsTable.innerHTML+=`<tr>
+<td>${s.roll}</td><td>${s.name}</td>
+<td><input class="sport" value="${sport}"></td>
+<td><input class="activity" value="${act}"></td>
+</tr>`;
+}
+}
+
+window.saveSports=async function(){
+for(let i=0;i<students.length;i++){
+const s=students[i];const sport=sportsTable.rows[i].querySelector(".sport").value||"";const activity=sportsTable.rows[i].querySelector(".activity").value||"";
+let docRef=doc(db,"attendance",`${s.id}_${activeSession}`);
+const oldData=(await getDoc(docRef)).data()||{};
+await setDoc(docRef,{...oldData,sports:sport,activity:activity,class:classSports.value,session:activeSession,schoolId});
+}
+alert("Sports/Activity Saved");
+}
+
+/* Attendance */
+window.loadAttendance=async function(){
+if(!classAttendance.value){alert("Select Class");return;}
+const q=query(collection(db,"admissions"),where("class","==",classAttendance.value),where("session","==",activeSession),where("schoolId","==",schoolId));
+const snap=await getDocs(q);students=snap.docs.map(d=>({id:d.id,...d.data()}));
+attendanceTable.innerHTML="";
+for(const s of students){
+let att=await getDoc(doc(db,"attendance",`${s.id}_${activeSession}`));let work=0,present=0,absent=0;
+if(att.exists()){work=att.data().work||0;present=att.data().present||0;absent=work-present;}
+attendanceTable.innerHTML+=`<tr>
+<td>${s.roll}</td><td>${s.name}</td>
+<td><input class="work" value="${work}"></td>
+<td><input class="present" value="${present}"></td>
+<td class="absent">${absent}</td>
+</tr>`;
+}
+}
+
+window.saveAttendance=async function(){
+for(let i=0;i<students.length;i++){
+const s=students[i];const work=attendanceTable.rows[i].querySelector(".work").value||0;
+const present=attendanceTable.rows[i].querySelector(".present").value||0;
+const absent=work-present;
+let docRef=doc(db,"attendance",`${s.id}_${activeSession}`);
+const oldData=(await getDoc(docRef)).data()||{};
+await setDoc(docRef,{...oldData,work,present,absent,class:classAttendance.value,session:activeSession,schoolId});
+attendanceTable.rows[i].querySelector(".absent").innerText=absent;
+}
+alert("Attendance Saved");
+}
+
+</script>
+
+</body>
+</html>
