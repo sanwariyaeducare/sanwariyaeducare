@@ -8,12 +8,7 @@
 body{font-family:Arial;margin:0;background:#f2f2f2;}
 .container{max-width:900px;margin:auto;padding:20px;}
 
-.card{
-background:white;
-padding:15px;
-border-radius:10px;
-margin-bottom:15px;
-}
+.card{background:white;padding:15px;border-radius:10px;margin-bottom:15px;}
 
 input,select,button{
 padding:10px;
@@ -37,25 +32,12 @@ border:2px solid #000;
 margin:auto;
 }
 
-.header{
-text-align:center;
-border-bottom:2px solid #000;
-margin-bottom:10px;
-}
-
+.header{text-align:center;border-bottom:2px solid #000;margin-bottom:10px;}
 .header img{width:60px;}
 
-.title{
-text-align:center;
-font-size:22px;
-font-weight:bold;
-margin:10px 0;
-}
+.title{text-align:center;font-size:22px;font-weight:bold;margin:10px 0;}
 
-.row{
-margin:5px 0;
-font-size:14px;
-}
+.row{margin:5px 0;font-size:14px;}
 
 .sign{
 display:flex;
@@ -69,10 +51,7 @@ width:150px;
 margin-top:30px;
 text-align:center;
 }
-
-.hide{display:none;}
 </style>
-
 </head>
 
 <body>
@@ -81,13 +60,13 @@ text-align:center;
 
 <div class="card">
 
-<input type="text" id="search" placeholder="Search Student Name">
+<input type="text" id="search" placeholder="Search Student">
 
 <select id="studentSelect"></select>
 
 <button onclick="loadTC()">Load TC</button>
 <button onclick="issueTC()">Issue TC</button>
-<button onclick="restoreTC()">Restore Student</button>
+<button onclick="restoreTC()">Restore</button>
 <button onclick="window.print()">Print</button>
 
 </div>
@@ -121,6 +100,7 @@ const schoolId=localStorage.getItem("schoolId")||"school_001";
 const session=localStorage.getItem("activeSession")||"2025-26";
 
 let students=[];
+let allStudents=[]; // 🔥 IMPORTANT (restore ke liye)
 let schoolData={};
 
 async function loadAll(){
@@ -133,15 +113,18 @@ if(s.exists()) schoolData=s.data();
 const snap=await getDocs(collection(db,"admissions"));
 
 students=[];
+allStudents=[];
+
 snap.forEach(d=>{
 let data=d.data();
 if(data.schoolId!==schoolId) return;
 if(data.session!==session) return;
 
-// hide TC issued students
-if(data.tcIssued) return;
+allStudents.push({id:d.id,...data});
 
+if(!data.tcIssued){
 students.push({id:d.id,...data});
+}
 });
 
 renderDropdown();
@@ -151,39 +134,47 @@ function renderDropdown(){
 
 let html='<option value="">Select Student</option>';
 
-students.forEach(s=>{
-html+=`<option value="${s.id}">${s.name} (${s.class})</option>`;
+allStudents.forEach(s=>{
+html+=`<option value="${s.id}">${s.name} (${s.class}) ${s.tcIssued?"[TC]":""}</option>`;
 });
 
-document.getElementById("studentSelect").innerHTML=html;
+studentSelect.innerHTML=html;
 }
 
-// SEARCH
-document.getElementById("search").addEventListener("keyup",function(){
-
+// 🔍 SEARCH
+search.addEventListener("keyup",function(){
 let val=this.value.toLowerCase();
 
 let html='<option value="">Select Student</option>';
 
-students.forEach(s=>{
+allStudents.forEach(s=>{
 if(s.name.toLowerCase().includes(val)){
 html+=`<option value="${s.id}">${s.name}</option>`;
 }
 });
 
 studentSelect.innerHTML=html;
-
 });
 
-// TC LOAD
+// ✅ LOAD TC
 window.loadTC=async function(){
 
 const id=studentSelect.value;
 if(!id) return alert("Select student");
 
-const st=students.find(x=>x.id===id);
+const st=allStudents.find(x=>x.id===id);
 
-let tcNo="TC-"+Date.now();
+// 🔥 attendance auto
+let att=await getDoc(doc(db,"attendance",`${id}_${session}`));
+let work=0,present=0;
+
+if(att.exists()){
+work=att.data().work||0;
+present=att.data().present||0;
+}
+
+const today=new Date().toLocaleDateString();
+const tcNo="TC-"+Date.now();
 
 let html=`
 
@@ -198,34 +189,35 @@ let html=`
 
 <div class="title">School Leaving Certificate / स्थानांतरण प्रमाण पत्र</div>
 
-<div class="row">TC No : ${tcNo}</div>
-<div class="row">Name : ${st.name}</div>
-<div class="row">Father Name : ${st.father}</div>
-<div class="row">Mother Name : ${st.mother}</div>
+<div class="row"><b>TC No :</b> ${tcNo}</div>
+<div class="row"><b>Date of Issue :</b> ${today}</div>
 
-<div class="row">Scholar No : ${st.scholer}</div>
+<div class="row"><b>Name :</b> ${st.name}</div>
+<div class="row"><b>Father :</b> ${st.father}</div>
+<div class="row"><b>Mother :</b> ${st.mother}</div>
 
-<div class="row">Nationality : ${st.national}</div>
-<div class="row">Caste : ${st.caste}</div>
-<div class="row">Category : ${st.category}</div>
+<div class="row"><b>Scholar No :</b> ${st.scholer}</div>
 
-<div class="row">Date of Birth : ${st.dob}</div>
+<div class="row"><b>Nationality :</b> ${st.national}</div>
+<div class="row"><b>Caste :</b> ${st.caste}</div>
+<div class="row"><b>Category :</b> ${st.category}</div>
 
-<div class="row">Date of First Admission : ${st.admissionDate} (Class ${st.class})</div>
+<div class="row"><b>DOB :</b> ${st.dob}</div>
 
-<div class="row">Class in which studying : ${st.class}</div>
+<div class="row"><b>Date of First Admission :</b> ${st.admissionDate} (Class ${st.class})</div>
 
-<div class="row">Whether dues paid : YES</div>
-<div class="row">Fee concession : NO</div>
+<div class="row"><b>Class :</b> ${st.class}</div>
 
-<div class="row">Total Working Days : 220</div>
-<div class="row">Present Days : 200</div>
+<div class="row"><b>Dues Paid :</b> YES</div>
+<div class="row"><b>Fee Concession :</b> NO</div>
 
-<div class="row">Reason for leaving : Parent request</div>
+<div class="row"><b>Total Working Days :</b> ${work}</div>
+<div class="row"><b>Present Days :</b> ${present}</div>
 
-<div class="row">Date of Issue : ${new Date().toLocaleDateString()}</div>
+<div class="row"><b>Reason :</b> Parent Request</div>
 
 <div class="sign">
+
 <div>
 <div class="line"></div>
 Class Teacher
@@ -233,33 +225,39 @@ Class Teacher
 
 <div>
 <div class="line"></div>
+Clerk
+</div>
+
+<div>
+<div class="line"></div>
 Principal
 </div>
+
 </div>
 
 </div>
 `;
 
-document.getElementById("tcArea").innerHTML=html;
+tcArea.innerHTML=html;
 
 }
 
-// ISSUE TC
+// ✅ ISSUE TC
 window.issueTC=async function(){
 
 const id=studentSelect.value;
 if(!id) return alert("Select student");
 
 await updateDoc(doc(db,"admissions",id),{
-tcIssued:true
+tcIssued:true,
+tcDate:new Date().toLocaleDateString()
 });
 
 alert("TC Issued ✅");
 loadAll();
-
 }
 
-// RESTORE
+// ✅ RESTORE
 window.restoreTC=async function(){
 
 const id=studentSelect.value;
@@ -269,9 +267,8 @@ await updateDoc(doc(db,"admissions",id),{
 tcIssued:false
 });
 
-alert("Student Restored ✅");
+alert("Restored ✅");
 loadAll();
-
 }
 
 loadAll();
