@@ -83,6 +83,8 @@ margin-top:30px;
 
 <input type="text" id="reason" placeholder="Reason for Leaving">
 <input type="text" id="date" placeholder="Date (dd/mm/yyyy)">
+<input type="text" id="dues" placeholder="All dues paid? (Yes/No)">
+<input type="text" id="concession" placeholder="Fee Concession Details">
 
 <br>
 
@@ -152,6 +154,8 @@ window.generateTC=function(){
 const id=document.getElementById("studentSelect").value;
 const reason=document.getElementById("reason").value;
 const date=document.getElementById("date").value;
+const dues=document.getElementById("dues").value;
+const concession=document.getElementById("concession").value;
 
 if(!id) return alert("Select student");
 
@@ -183,17 +187,27 @@ ${schoolData.address||''} | DISE: ${schoolData.dise||''}
 <div class="row"><b>2. Father Name / पिता का नाम:</b> ${s.father}</div>
 <div class="row"><b>3. Mother Name / माता का नाम:</b> ${s.mother||""}</div>
 
-<div class="row"><b>4. Class / कक्षा:</b> ${s.class}</div>
-<div class="row"><b>5. Roll No:</b> ${s.roll||""}</div>
+<div class="row"><b>4. Scholar No:</b> ${s.scholer||""}</div>
 
-<div class="row"><b>6. Date of Birth / जन्म तिथि:</b> ${s.dob||""}</div>
-<div class="row"><b>7. Admission Date:</b> ${s.admissionDate||""}</div>
+<div class="row"><b>5. Nationality:</b> ${s.national||""}</div>
+<div class="row"><b>6. Caste:</b> ${s.caste||""}</div>
+<div class="row"><b>7. Category:</b> ${s.category||""}</div>
 
-<div class="row"><b>8. Address:</b> ${s.village||""}, ${s.district||""}, ${s.state||""}</div>
+<div class="row"><b>8. Date of Birth:</b> ${s.dob||""}</div>
 
-<div class="row"><b>9. Reason for Leaving / विद्यालय छोड़ने का कारण:</b> ${reason}</div>
+<div class="row"><b>9. Date of First Admission with Class:</b> ${s.admissionDate||""} (Class ${s.class})</div>
 
-<div class="row"><b>10. Conduct / आचरण:</b> Good</div>
+<div class="row"><b>10. Class in which student last studied:</b> ${s.class}</div>
+
+<div class="row"><b>11. Whether the pupil has paid all dues to the School:</b> ${dues}</div>
+
+<div class="row"><b>12. Whether the pupil was in receipt of any fee concession:</b> ${concession}</div>
+
+<div class="row"><b>13. Reason for Leaving:</b> ${reason}</div>
+
+<div class="row"><b>14. Address:</b> ${s.village||""}, ${s.district||""}, ${s.state||""}</div>
+
+<div class="row"><b>15. Conduct:</b> Good</div>
 
 <div class="sign">
 
@@ -235,4 +249,4 @@ jsPDF:{unit:"mm",format:"a4"}
 </script>
 
 </body>
-</html>
+  </html>
