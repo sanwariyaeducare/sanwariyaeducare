@@ -22,7 +22,17 @@ page-break-after:always;
 display:grid;
 gap:5mm;
 }
+/* DYNAMIC GRID FIX */
 
+.admit-page.two{
+grid-template-columns:1fr;
+grid-template-rows:repeat(2,1fr);
+}
+
+.admit-page.four{
+grid-template-columns:1fr 1fr;
+grid-template-rows:repeat(2,1fr);
+}
 .admit-card{
 border:2px solid #004aad;
 padding:10px;
@@ -317,7 +327,9 @@ let html="";
 
 for(let i=0;i<students.length;i+=perPage){
 
-html+='<div class="admit-page" style="grid-template-columns:repeat(2,1fr);">';
+let pageClass = perPage==2 ? "two" : "four";
+
+html+=`<div class="admit-page ${pageClass}">`;
 
 const slice=students.slice(i,i+perPage);
 
