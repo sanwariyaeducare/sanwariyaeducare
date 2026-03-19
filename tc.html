@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Transfer Certificate</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<style>
+body{font-family:Arial;margin:0;background:#f2f4f8;}
+.container{max-width:1000px;margin:auto;padding:20px;}
+.card{background:white;padding:20px;border-radius:10px;margin-bottom:20px;}
+
+select,input,button{padding:10px;margin:5px;}
+button{background:#004aad;color:white;border:none;border-radius:5px;cursor:pointer;}
+
+.tc{
+width:210mm;
+min-height:297mm;
+background:white;
+margin:auto;
+padding:20px;
+border:2px solid black;
+}
+
+.header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+border-bottom:3px solid black;
+padding-bottom:10px;
+}
+
+.header img{width:60px;}
+
+.school-name{
+flex:1;
+text-align:center;
+font-size:26px;
+font-weight:bold;
+}
+
+.school-info{
+text-align:center;
+font-size:13px;
+}
+
+.title{
+text-align:center;
+font-size:22px;
+font-weight:bold;
+margin-top:10px;
+text-decoration:underline;
+}
+
+.row{
+margin-top:8px;
+font-size:15px;
+}
+
+.sign{
+display:flex;
+justify-content:space-between;
+margin-top:60px;
+}
+
+.line{
+border-top:1px solid black;
+width:150px;
+margin-top:30px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="card">
+
+<select id="studentSelect"></select>
+
+<input type="text" id="reason" placeholder="Reason for Leaving">
+<input type="text" id="date" placeholder="Date (dd/mm/yyyy)">
+
+<br>
+
+<button onclick="generateTC()">Generate TC</button>
+<button onclick="window.print()">Print</button>
+<button onclick="downloadPDF()">PDF</button>
+
+</div>
+
+<div id="tcArea"></div>
+
+</div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig={
+apiKey:"AIzaSyBj8_SjhJ9QtXu-4DigToqjBos5waZEXYw",
+authDomain:"nmpsnagguradiya-b9b94.firebaseapp.com",
+projectId:"nmpsnagguradiya-b9b94"
+};
+
+const app=initializeApp(firebaseConfig);
+const db=getFirestore(app);
+
+const schoolId = localStorage.getItem("schoolId") || "school_001";
+const session = localStorage.getItem("activeSession") || "2025-26";
+
+let students=[];
+let schoolData={};
+
+/* LOAD SCHOOL */
+async function loadSchool(){
+const snap=await getDoc(doc(db,"schools",schoolId));
+if(snap.exists()) schoolData=snap.data();
+}
+loadSchool();
+
+/* LOAD STUDENTS */
+async function loadStudents(){
+const snap = await getDocs(collection(db,"admissions"));
+let options='<option value="">Select Student</option>';
+
+snap.forEach(docSnap=>{
+const d=docSnap.data();
+if(d.schoolId!==schoolId) return;
+if(d.session!==session) return;
+
+students.push({id:docSnap.id,...d});
+options+=`<option value="${docSnap.id}">${d.name} - ${d.class}</option>`;
+});
+
+document.getElementById("studentSelect").innerHTML=options;
+}
+loadStudents();
+
+/* AUTO TC NUMBER */
+function generateTCNo(){
+return "TC-"+Date.now();
+}
+
+/* GENERATE TC */
+window.generateTC=function(){
+
+const id=document.getElementById("studentSelect").value;
+const reason=document.getElementById("reason").value;
+const date=document.getElementById("date").value;
+
+if(!id) return alert("Select student");
+
+const s=students.find(x=>x.id===id);
+const tcNo=generateTCNo();
+
+let html=`
+
+<div class="tc">
+
+<div class="header">
+<img src="${schoolData.logo||''}">
+<div class="school-name">${schoolData.name||''}</div>
+<img src="${schoolData.logo||''}">
+</div>
+
+<div class="school-info">
+${schoolData.address||''} | DISE: ${schoolData.dise||''}
+</div>
+
+<div class="title">SCHOOL LEAVING CERTIFICATE</div>
+<div class="title">विद्यालय त्याग प्रमाण पत्र</div>
+
+<div class="row">TC No: ${tcNo} | Date: ${date}</div>
+
+<hr>
+
+<div class="row"><b>1. Student Name / छात्र का नाम:</b> ${s.name}</div>
+<div class="row"><b>2. Father Name / पिता का नाम:</b> ${s.father}</div>
+<div class="row"><b>3. Mother Name / माता का नाम:</b> ${s.mother||""}</div>
+
+<div class="row"><b>4. Class / कक्षा:</b> ${s.class}</div>
+<div class="row"><b>5. Roll No:</b> ${s.roll||""}</div>
+
+<div class="row"><b>6. Date of Birth / जन्म तिथि:</b> ${s.dob||""}</div>
+<div class="row"><b>7. Admission Date:</b> ${s.admissionDate||""}</div>
+
+<div class="row"><b>8. Address:</b> ${s.village||""}, ${s.district||""}, ${s.state||""}</div>
+
+<div class="row"><b>9. Reason for Leaving / विद्यालय छोड़ने का कारण:</b> ${reason}</div>
+
+<div class="row"><b>10. Conduct / आचरण:</b> Good</div>
+
+<div class="sign">
+
+<div>
+Class Teacher
+<div class="line"></div>
+</div>
+
+<div>
+Clerk
+<div class="line"></div>
+</div>
+
+<div>
+Principal
+<div class="line"></div>
+</div>
+
+</div>
+
+</div>
+
+`;
+
+document.getElementById("tcArea").innerHTML=html;
+
+}
+
+/* PDF */
+window.downloadPDF=function(){
+html2pdf(document.getElementById("tcArea"),{
+margin:5,
+filename:"tc.pdf",
+html2canvas:{scale:2},
+jsPDF:{unit:"mm",format:"a4"}
+});
+}
+
+</script>
+
+</body>
+</html>
