@@ -3,74 +3,76 @@
 <head>
 <meta charset="UTF-8">
 <title>Transfer Certificate</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <style>
-body{font-family:Arial;margin:0;background:#f2f4f8;}
-.container{max-width:1000px;margin:auto;padding:20px;}
-.card{background:white;padding:20px;border-radius:10px;margin-bottom:20px;}
+body{font-family:Arial;margin:0;background:#f2f2f2;}
+.container{max-width:900px;margin:auto;padding:20px;}
 
-select,input,button{padding:10px;margin:5px;}
-button{background:#004aad;color:white;border:none;border-radius:5px;cursor:pointer;}
+.card{
+background:white;
+padding:15px;
+border-radius:10px;
+margin-bottom:15px;
+}
+
+input,select,button{
+padding:10px;
+margin:5px;
+}
+
+button{
+background:#004aad;
+color:white;
+border:none;
+border-radius:5px;
+cursor:pointer;
+}
 
 .tc{
 width:210mm;
 min-height:297mm;
 background:white;
-margin:auto;
 padding:20px;
-border:2px solid black;
+border:2px solid #000;
+margin:auto;
 }
 
 .header{
-display:flex;
-justify-content:space-between;
-align-items:center;
-border-bottom:3px solid black;
-padding-bottom:10px;
+text-align:center;
+border-bottom:2px solid #000;
+margin-bottom:10px;
 }
 
 .header img{width:60px;}
-
-.school-name{
-flex:1;
-text-align:center;
-font-size:26px;
-font-weight:bold;
-}
-
-.school-info{
-text-align:center;
-font-size:13px;
-}
 
 .title{
 text-align:center;
 font-size:22px;
 font-weight:bold;
-margin-top:10px;
-text-decoration:underline;
+margin:10px 0;
 }
 
 .row{
-margin-top:8px;
-font-size:15px;
+margin:5px 0;
+font-size:14px;
 }
 
 .sign{
 display:flex;
 justify-content:space-between;
-margin-top:60px;
+margin-top:40px;
 }
 
 .line{
-border-top:1px solid black;
+border-top:1px solid #000;
 width:150px;
 margin-top:30px;
+text-align:center;
 }
+
+.hide{display:none;}
 </style>
+
 </head>
 
 <body>
@@ -79,18 +81,14 @@ margin-top:30px;
 
 <div class="card">
 
+<input type="text" id="search" placeholder="Search Student Name">
+
 <select id="studentSelect"></select>
 
-<input type="text" id="reason" placeholder="Reason for Leaving">
-<input type="text" id="date" placeholder="Date (dd/mm/yyyy)">
-<input type="text" id="dues" placeholder="All dues paid? (Yes/No)">
-<input type="text" id="concession" placeholder="Fee Concession Details">
-
-<br>
-
-<button onclick="generateTC()">Generate TC</button>
+<button onclick="loadTC()">Load TC</button>
+<button onclick="issueTC()">Issue TC</button>
+<button onclick="restoreTC()">Restore Student</button>
 <button onclick="window.print()">Print</button>
-<button onclick="downloadPDF()">PDF</button>
 
 </div>
 
@@ -101,152 +99,184 @@ margin-top:30px;
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+getFirestore,
+collection,
+getDocs,
+doc,
+getDoc,
+updateDoc
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig={
-apiKey:"AIzaSyBj8_SjhJ9QtXu-4DigToqjBos5waZEXYw",
-authDomain:"nmpsnagguradiya-b9b94.firebaseapp.com",
+apiKey:"AIzaSy...",
+authDomain:"...",
 projectId:"nmpsnagguradiya-b9b94"
 };
 
 const app=initializeApp(firebaseConfig);
 const db=getFirestore(app);
 
-const schoolId = localStorage.getItem("schoolId") || "school_001";
-const session = localStorage.getItem("activeSession") || "2025-26";
+const schoolId=localStorage.getItem("schoolId")||"school_001";
+const session=localStorage.getItem("activeSession")||"2025-26";
 
 let students=[];
 let schoolData={};
 
-/* LOAD SCHOOL */
-async function loadSchool(){
-const snap=await getDoc(doc(db,"schools",schoolId));
-if(snap.exists()) schoolData=snap.data();
-}
-loadSchool();
+async function loadAll(){
 
-/* LOAD STUDENTS */
-async function loadStudents(){
-const snap = await getDocs(collection(db,"admissions"));
-let options='<option value="">Select Student</option>';
+// school
+const s=await getDoc(doc(db,"schools",schoolId));
+if(s.exists()) schoolData=s.data();
 
-snap.forEach(docSnap=>{
-const d=docSnap.data();
-if(d.schoolId!==schoolId) return;
-if(d.session!==session) return;
+// students
+const snap=await getDocs(collection(db,"admissions"));
 
-students.push({id:docSnap.id,...d});
-options+=`<option value="${docSnap.id}">${d.name} - ${d.class}</option>`;
+students=[];
+snap.forEach(d=>{
+let data=d.data();
+if(data.schoolId!==schoolId) return;
+if(data.session!==session) return;
+
+// hide TC issued students
+if(data.tcIssued) return;
+
+students.push({id:d.id,...data});
 });
 
-document.getElementById("studentSelect").innerHTML=options;
-}
-loadStudents();
-
-/* AUTO TC NUMBER */
-function generateTCNo(){
-return "TC-"+Date.now();
+renderDropdown();
 }
 
-/* GENERATE TC */
-window.generateTC=function(){
+function renderDropdown(){
 
-const id=document.getElementById("studentSelect").value;
-const reason=document.getElementById("reason").value;
-const date=document.getElementById("date").value;
-const dues=document.getElementById("dues").value;
-const concession=document.getElementById("concession").value;
+let html='<option value="">Select Student</option>';
 
+students.forEach(s=>{
+html+=`<option value="${s.id}">${s.name} (${s.class})</option>`;
+});
+
+document.getElementById("studentSelect").innerHTML=html;
+}
+
+// SEARCH
+document.getElementById("search").addEventListener("keyup",function(){
+
+let val=this.value.toLowerCase();
+
+let html='<option value="">Select Student</option>';
+
+students.forEach(s=>{
+if(s.name.toLowerCase().includes(val)){
+html+=`<option value="${s.id}">${s.name}</option>`;
+}
+});
+
+studentSelect.innerHTML=html;
+
+});
+
+// TC LOAD
+window.loadTC=async function(){
+
+const id=studentSelect.value;
 if(!id) return alert("Select student");
 
-const s=students.find(x=>x.id===id);
-const tcNo=generateTCNo();
+const st=students.find(x=>x.id===id);
+
+let tcNo="TC-"+Date.now();
 
 let html=`
 
 <div class="tc">
 
 <div class="header">
-<img src="${schoolData.logo||''}">
-<div class="school-name">${schoolData.name||''}</div>
-<img src="${schoolData.logo||''}">
+<img src="${schoolData.logo}">
+<h2>${schoolData.name}</h2>
+<div>${schoolData.address}</div>
+<div>DISE : ${schoolData.dise}</div>
 </div>
 
-<div class="school-info">
-${schoolData.address||''} | DISE: ${schoolData.dise||''}
-</div>
+<div class="title">School Leaving Certificate / स्थानांतरण प्रमाण पत्र</div>
 
-<div class="title">SCHOOL LEAVING CERTIFICATE</div>
-<div class="title">विद्यालय त्याग प्रमाण पत्र</div>
+<div class="row">TC No : ${tcNo}</div>
+<div class="row">Name : ${st.name}</div>
+<div class="row">Father Name : ${st.father}</div>
+<div class="row">Mother Name : ${st.mother}</div>
 
-<div class="row">TC No: ${tcNo} | Date: ${date}</div>
+<div class="row">Scholar No : ${st.scholer}</div>
 
-<hr>
+<div class="row">Nationality : ${st.national}</div>
+<div class="row">Caste : ${st.caste}</div>
+<div class="row">Category : ${st.category}</div>
 
-<div class="row"><b>1. Student Name / छात्र का नाम:</b> ${s.name}</div>
-<div class="row"><b>2. Father Name / पिता का नाम:</b> ${s.father}</div>
-<div class="row"><b>3. Mother Name / माता का नाम:</b> ${s.mother||""}</div>
+<div class="row">Date of Birth : ${st.dob}</div>
 
-<div class="row"><b>4. Scholar No:</b> ${s.scholer||""}</div>
+<div class="row">Date of First Admission : ${st.admissionDate} (Class ${st.class})</div>
 
-<div class="row"><b>5. Nationality:</b> ${s.national||""}</div>
-<div class="row"><b>6. Caste:</b> ${s.caste||""}</div>
-<div class="row"><b>7. Category:</b> ${s.category||""}</div>
+<div class="row">Class in which studying : ${st.class}</div>
 
-<div class="row"><b>8. Date of Birth:</b> ${s.dob||""}</div>
+<div class="row">Whether dues paid : YES</div>
+<div class="row">Fee concession : NO</div>
 
-<div class="row"><b>9. Date of First Admission with Class:</b> ${s.admissionDate||""} (Class ${s.class})</div>
+<div class="row">Total Working Days : 220</div>
+<div class="row">Present Days : 200</div>
 
-<div class="row"><b>10. Class in which student last studied:</b> ${s.class}</div>
+<div class="row">Reason for leaving : Parent request</div>
 
-<div class="row"><b>11. Whether the pupil has paid all dues to the School:</b> ${dues}</div>
-
-<div class="row"><b>12. Whether the pupil was in receipt of any fee concession:</b> ${concession}</div>
-
-<div class="row"><b>13. Reason for Leaving:</b> ${reason}</div>
-
-<div class="row"><b>14. Address:</b> ${s.village||""}, ${s.district||""}, ${s.state||""}</div>
-
-<div class="row"><b>15. Conduct:</b> Good</div>
+<div class="row">Date of Issue : ${new Date().toLocaleDateString()}</div>
 
 <div class="sign">
-
 <div>
+<div class="line"></div>
 Class Teacher
-<div class="line"></div>
 </div>
 
 <div>
-Clerk
 <div class="line"></div>
-</div>
-
-<div>
 Principal
-<div class="line"></div>
+</div>
 </div>
 
 </div>
-
-</div>
-
 `;
 
 document.getElementById("tcArea").innerHTML=html;
 
 }
 
-/* PDF */
-window.downloadPDF=function(){
-html2pdf(document.getElementById("tcArea"),{
-margin:5,
-filename:"tc.pdf",
-html2canvas:{scale:2},
-jsPDF:{unit:"mm",format:"a4"}
+// ISSUE TC
+window.issueTC=async function(){
+
+const id=studentSelect.value;
+if(!id) return alert("Select student");
+
+await updateDoc(doc(db,"admissions",id),{
+tcIssued:true
 });
+
+alert("TC Issued ✅");
+loadAll();
+
 }
+
+// RESTORE
+window.restoreTC=async function(){
+
+const id=studentSelect.value;
+if(!id) return alert("Select student");
+
+await updateDoc(doc(db,"admissions",id),{
+tcIssued:false
+});
+
+alert("Student Restored ✅");
+loadAll();
+
+}
+
+loadAll();
 
 </script>
 
 </body>
-  </html>
+</html>
