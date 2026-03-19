@@ -10,7 +10,7 @@ body{font-family:Arial;margin:0;background:#f2f2f2;}
 
 .card{background:white;padding:15px;border-radius:10px;margin-bottom:15px;}
 
-input,select,button{
+input,select,button,textarea{
 padding:10px;
 margin:5px;
 }
@@ -30,6 +30,7 @@ background:white;
 padding:20px;
 border:2px solid #000;
 margin:auto;
+font-size:16px;
 }
 
 .header{text-align:center;border-bottom:2px solid #000;margin-bottom:10px;}
@@ -37,12 +38,25 @@ margin:auto;
 
 .title{text-align:center;font-size:22px;font-weight:bold;margin:10px 0;}
 
-.row{margin:5px 0;font-size:14px;}
+.row{margin:6px 0;}
+
+.photo{
+width:100px;
+height:120px;
+border:1px solid #000;
+object-fit:cover;
+}
+
+.top{
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
 
 .sign{
 display:flex;
 justify-content:space-between;
-margin-top:40px;
+margin-top:50px;
 }
 
 .line{
@@ -63,6 +77,13 @@ text-align:center;
 <input type="text" id="search" placeholder="Search Student">
 
 <select id="studentSelect"></select>
+
+<br>
+
+<textarea id="reason" placeholder="Reason for Leaving"></textarea>
+<input type="text" id="fee" placeholder="Fee Concession (Yes/No or Details)">
+
+<br>
 
 <button onclick="loadTC()">Load TC</button>
 <button onclick="issueTC()">Issue TC</button>
@@ -100,16 +121,14 @@ const schoolId=localStorage.getItem("schoolId")||"school_001";
 const session=localStorage.getItem("activeSession")||"2025-26";
 
 let students=[];
-let allStudents=[]; // 🔥 IMPORTANT (restore ke liye)
+let allStudents=[];
 let schoolData={};
 
 async function loadAll(){
 
-// school
 const s=await getDoc(doc(db,"schools",schoolId));
 if(s.exists()) schoolData=s.data();
 
-// students
 const snap=await getDocs(collection(db,"admissions"));
 
 students=[];
@@ -131,7 +150,6 @@ renderDropdown();
 }
 
 function renderDropdown(){
-
 let html='<option value="">Select Student</option>';
 
 allStudents.forEach(s=>{
@@ -141,10 +159,9 @@ html+=`<option value="${s.id}">${s.name} (${s.class}) ${s.tcIssued?"[TC]":""}</o
 studentSelect.innerHTML=html;
 }
 
-// 🔍 SEARCH
+// SEARCH
 search.addEventListener("keyup",function(){
 let val=this.value.toLowerCase();
-
 let html='<option value="">Select Student</option>';
 
 allStudents.forEach(s=>{
@@ -156,7 +173,7 @@ html+=`<option value="${s.id}">${s.name}</option>`;
 studentSelect.innerHTML=html;
 });
 
-// ✅ LOAD TC
+// LOAD TC
 window.loadTC=async function(){
 
 const id=studentSelect.value;
@@ -164,7 +181,7 @@ if(!id) return alert("Select student");
 
 const st=allStudents.find(x=>x.id===id);
 
-// 🔥 attendance auto
+// attendance auto
 let att=await getDoc(doc(db,"attendance",`${id}_${session}`));
 let work=0,present=0;
 
@@ -175,6 +192,9 @@ present=att.data().present||0;
 
 const today=new Date().toLocaleDateString();
 const tcNo="TC-"+Date.now();
+
+const reason=document.getElementById("reason").value || "Parent Request";
+const fee=document.getElementById("fee").value || "NO";
 
 let html=`
 
@@ -189,8 +209,14 @@ let html=`
 
 <div class="title">School Leaving Certificate / स्थानांतरण प्रमाण पत्र</div>
 
+<div class="top">
+<div>
 <div class="row"><b>TC No :</b> ${tcNo}</div>
 <div class="row"><b>Date of Issue :</b> ${today}</div>
+</div>
+
+<img class="photo" src="${st.photo||''}">
+</div>
 
 <div class="row"><b>Name :</b> ${st.name}</div>
 <div class="row"><b>Father :</b> ${st.father}</div>
@@ -209,12 +235,14 @@ let html=`
 <div class="row"><b>Class :</b> ${st.class}</div>
 
 <div class="row"><b>Dues Paid :</b> YES</div>
-<div class="row"><b>Fee Concession :</b> NO</div>
+<div class="row"><b>Fee Concession :</b> ${fee}</div>
 
 <div class="row"><b>Total Working Days :</b> ${work}</div>
 <div class="row"><b>Present Days :</b> ${present}</div>
 
-<div class="row"><b>Reason :</b> Parent Request</div>
+<div class="row"><b>General Conduct :</b> GOOD</div>
+
+<div class="row"><b>Reason :</b> ${reason}</div>
 
 <div class="sign">
 
@@ -242,7 +270,7 @@ tcArea.innerHTML=html;
 
 }
 
-// ✅ ISSUE TC
+// ISSUE
 window.issueTC=async function(){
 
 const id=studentSelect.value;
@@ -257,7 +285,7 @@ alert("TC Issued ✅");
 loadAll();
 }
 
-// ✅ RESTORE
+// RESTORE
 window.restoreTC=async function(){
 
 const id=studentSelect.value;
